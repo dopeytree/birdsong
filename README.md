@@ -80,12 +80,13 @@ when Home Assistant itself is HTTPS), Unraid's per-container Tailscale
 works well:
 
 1. Edit the container and switch on **Use Tailscale**.
-2. Birdsong has no volumes of its own, so give Tailscale a persistent
-   home: the template ships an optional **Tailscale state** path
-   (`/mnt/user/appdata/birdsong/tailscale` mapped to `/tailscale`);
-   in Tailscale's advanced settings set **Tailscale State Directory**
-   to `/tailscale`. Without this, every container update would join the
-   tailnet as a brand-new machine.
+2. Tailscale needs a persistent folder for its identity. The template
+   ships one: a **Data folder** (`/mnt/user/appdata/birdsong` mapped to
+   `/data`), which Tailscale finds on its own, so there is nothing to
+   configure. If your container predates the Data folder, or you run
+   plain `docker run`, add `-v /mnt/user/appdata/birdsong:/data`.
+   Without it, Tailscale refuses to start, and would otherwise join the
+   tailnet as a brand-new machine on every update.
 3. Enable **Tailscale Serve** with port `80` (the container's internal
    port, not the LAN port), and make sure MagicDNS and HTTPS
    certificates are enabled for your tailnet (Tailscale admin, DNS).
