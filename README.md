@@ -73,6 +73,29 @@ If you open Home Assistant over HTTPS, the browser will refuse to embed a
 plain-HTTP page inside it: serve Birdsong through your reverse proxy with
 HTTPS and use that address in the card instead.
 
+## HTTPS with Tailscale
+
+To give Birdsong an HTTPS address (which the Home Assistant iframe needs
+when Home Assistant itself is HTTPS), Unraid's per-container Tailscale
+works well:
+
+1. Edit the container and switch on **Use Tailscale**.
+2. Tailscale needs a persistent folder for its identity. The template
+   ships one: a **Data folder** (`/mnt/user/appdata/birdsong` mapped to
+   `/data`), which Tailscale finds on its own, so there is nothing to
+   configure. If your container predates the Data folder, or you run
+   plain `docker run`, add `-v /mnt/user/appdata/birdsong:/data`.
+   Without it, Tailscale refuses to start, and would otherwise join the
+   tailnet as a brand-new machine on every update.
+3. Enable **Tailscale Serve** with port `80` (the container's internal
+   port, not the LAN port), and make sure MagicDNS and HTTPS
+   certificates are enabled for your tailnet (Tailscale admin, DNS).
+
+Birdsong is then at `https://birdsong.<your-tailnet>.ts.net` with a real
+certificate. Note that only devices on your tailnet can reach that
+address; for every device on your LAN instead, put Birdsong behind a
+reverse proxy such as Nginx Proxy Manager with its own certificate.
+
 ## What is inside the image
 
 - The page (`html/index.html`, plain HTML with no build step) and nginx,
