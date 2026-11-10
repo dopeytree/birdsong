@@ -17,8 +17,11 @@ Created by [Ed Stone](https://ed-stone.co.uk).
 Then open `http://<your-server>:8095`. `BIRDNET_URL` is the address of
 your BirdNET-Go as the container can reach it. That is the only setting.
 
-- **Unraid:** add `unraid/birdsong.xml` as a template, or Add Container
-  with the repository, port and variable above.
+- **Unraid:** install the template from the terminal, then Docker tab,
+  Add Container, and choose `birdsong` under Template:
+
+      wget -O /boot/config/plugins/dockerMan/templates-user/my-birdsong.xml \
+        https://raw.githubusercontent.com/dopeytree/birdsong/main/unraid/birdsong.xml
 - **Compose:** see `docker-compose.yml`.
 - **Preview without a station:** open `/?demo`.
 
@@ -66,6 +69,8 @@ are remembered per browser.
 - Descriptions: Wikipedia, CC BY-SA.
 - Fallback plates: public-domain works on Wikimedia Commons, chiefly
   *Nederlandsche Vogelen* (Nozeman & Sepp, 1770-1829), Koninklijke Bibliotheek.
+- Icon (`unraid/icon.png`): the robin cut-out from Fugleramme, after
+  H. E. Dresser, CC BY-SA 4.0.
 - Typeface: IM Fell English by Igino Marini, SIL Open Font Licence
   (`html/fonts/OFL.txt`).
 - BirdNET-Go is a separate project (CC BY-NC-SA 4.0, non-commercial) and

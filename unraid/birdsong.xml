@@ -4,13 +4,24 @@
   <Repository>ghcr.io/dopeytree/birdsong:latest</Repository>
   <Registry>https://github.com/dopeytree/birdsong/pkgs/container/birdsong</Registry>
   <Network>bridge</Network>
+  <MyIP/>
   <Shell>sh</Shell>
   <Privileged>false</Privileged>
   <Support>https://github.com/dopeytree/birdsong/issues</Support>
   <Project>https://github.com/dopeytree/birdsong</Project>
-  <Overview>Shows the birds your BirdNET-Go station has heard as a plate of hand-cut 1800s illustrations, each sized by how often it called.</Overview>
-  <Category>HomeAutomation: Other:</Category>
+  <Overview>Birdsong shows the birds your BirdNET-Go station has heard as a single plate of hand-cut 1800s illustrations, each bird sized by how often it called. Select a bird for its plate, a short description, its calls by hour and by day, and its latest recordings with playback.&#xD;
+&#xD;
+Requires a running BirdNET-Go. Set its address below, then open the WebUI. The artwork is built into the image; the image is rebuilt weekly to pick up new birds.</Overview>
+  <Category>HomeAutomation: Other: Status:Stable</Category>
   <WebUI>http://[IP]:[PORT:80]/</WebUI>
-  <Config Name="Web port" Target="80" Default="8095" Mode="tcp" Description="Port for the Birdsong page" Type="Port" Display="always" Required="true" Mask="false">8095</Config>
-  <Config Name="BirdNET-Go address" Target="BIRDNET_URL" Default="http://192.168.1.50:8080" Mode="" Description="Address of your BirdNET-Go, including http:// and the port" Type="Variable" Display="always" Required="true" Mask="false">http://192.168.1.50:8080</Config>
+  <TemplateURL>https://raw.githubusercontent.com/dopeytree/birdsong/main/unraid/birdsong.xml</TemplateURL>
+  <Icon>https://raw.githubusercontent.com/dopeytree/birdsong/main/unraid/icon.png</Icon>
+  <ExtraParams>--restart unless-stopped</ExtraParams>
+  <PostArgs/>
+  <CPUset/>
+  <DonateText/>
+  <DonateLink/>
+  <Requires>BirdNET-Go, installed separately and reachable from this container.</Requires>
+  <Config Name="WebUI port" Target="80" Default="8095" Mode="tcp" Description="Port the Birdsong page is served on." Type="Port" Display="always" Required="true" Mask="false">8095</Config>
+  <Config Name="BirdNET-Go address" Target="BIRDNET_URL" Default="http://192.168.1.50:8080" Mode="" Description="Address of your BirdNET-Go, with http:// and its port, for example http://192.168.1.50:8080. Use the server's IP, not localhost." Type="Variable" Display="always" Required="true" Mask="false">http://192.168.1.50:8080</Config>
 </Container>
