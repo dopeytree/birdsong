@@ -155,8 +155,8 @@ dd.big{color:var(--madder);font-size:1.3rem;line-height:1.2}
   </div>
   <div id="plateno"><span id="pl"></span><button id="openSettings">Station settings</button></div>
   <nav aria-label="Period">
-    <button data-p="today" aria-pressed="true">Today</button>
-    <button data-p="week" aria-pressed="false">Seven days</button>
+    <button data-p="today" aria-pressed="false">Today</button>
+    <button data-p="week" aria-pressed="true">Seven days</button>
     <button data-p="month" aria-pressed="false">Thirty days</button>
     <button data-p="all" aria-pressed="false">Since records began</button>
   </nav>
@@ -346,7 +346,7 @@ function when(s) {
 /* ===================================================================
    Detections from BirdNET-Go
    =================================================================== */
-let period = store.get("period", "today");
+let period = store.get("period", "week");
 
 async function fetchSpecies() {
   if (demo) return sample();
@@ -564,7 +564,7 @@ const figures = new Map();   // sci -> { button, aspect, plate, plateKey }
 let species = [], firstReveal = true;
 
 /* In one-screen mode, give the plate whatever height is left once everything else is measured. */
-let fit = store.get("fit", false);
+let fit = store.get("fit", true);
 function fitPlate() {
   document.body.classList.toggle("fit", fit);
   if (!fit) { plateEl.style.height = ""; return; }
