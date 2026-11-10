@@ -7,7 +7,15 @@ station has heard as a single plate of hand-cut 1800s illustrations, each
 bird sized by how often it called. It is one small Docker container with
 one setting.
 
-Created by [Ed Stone](https://ed-stone.co.uk).
+Created by [Ed Stone](https://ed-stone.co.uk). Current version: 0.42
+([changelog](CHANGELOG.md)).
+
+## See it in action
+
+[![A tour of Birdsong: the plate over different periods, and the cards for a robin and a little owl](docs/birdsong-v0.42.gif)](docs/birdsong-v0.42.mp4?raw=true)
+
+Shown at double speed; [the full recording](docs/birdsong-v0.42.mp4?raw=true) has sound,
+including a little owl heard in the small hours.
 
 ## What it shows
 
