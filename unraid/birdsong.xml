@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>birdsong</Name>
+  <Repository>ghcr.io/dopeytree/birdsong:latest</Repository>
+  <Registry>https://github.com/dopeytree/birdsong/pkgs/container/birdsong</Registry>
+  <Network>bridge</Network>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/dopeytree/birdsong/issues</Support>
+  <Project>https://github.com/dopeytree/birdsong</Project>
+  <Overview>Shows the birds your BirdNET-Go station has heard as a plate of hand-cut 1800s illustrations, each sized by how often it called.</Overview>
+  <Category>HomeAutomation: Other:</Category>
+  <WebUI>http://[IP]:[PORT:80]/</WebUI>
+  <Config Name="Web port" Target="80" Default="8095" Mode="tcp" Description="Port for the Birdsong page" Type="Port" Display="always" Required="true" Mask="false">8095</Config>
+  <Config Name="BirdNET-Go address" Target="BIRDNET_URL" Default="http://192.168.1.50:8080" Mode="" Description="Address of your BirdNET-Go, including http:// and the port" Type="Variable" Display="always" Required="true" Mask="false">http://192.168.1.50:8080</Config>
+</Container>

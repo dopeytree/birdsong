@@ -1,0 +1,3 @@
+#!/bin/sh
+# A trailing slash on BIRDNET_URL would make nginx drop the /api prefix; remove it.
+export BIRDNET_URL="${BIRDNET_URL%/}"

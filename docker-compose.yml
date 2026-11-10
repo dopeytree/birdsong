@@ -1,0 +1,10 @@
+services:
+  birdsong:
+    image: ghcr.io/dopeytree/birdsong:latest
+    container_name: birdsong
+    restart: unless-stopped
+    ports:
+      - "8095:80"
+    environment:
+      # Address of your BirdNET-Go, as reachable from this container
+      BIRDNET_URL: "http://192.168.1.50:8080"
