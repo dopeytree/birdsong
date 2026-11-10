@@ -62,6 +62,17 @@ container's address in BirdNET-Go's security settings. Recordings and
 spectrograms appear only if BirdNET-Go keeps audio clips, and weather
 only if it has a weather provider switched on.
 
+## Home Assistant
+
+To put Birdsong on a Home Assistant dashboard, add a new view and give it
+the **Grid** layout, then add a single **Webpage** (iframe) card with your
+Birdsong address, for example `http://192.168.1.50:8095`. One-screen mode
+(on by default) suits the card well.
+
+If you open Home Assistant over HTTPS, the browser will refuse to embed a
+plain-HTTP page inside it: serve Birdsong through your reverse proxy with
+HTTPS and use that address in the card instead.
+
 ## What is inside the image
 
 - The page (`html/index.html`, plain HTML with no build step) and nginx,
