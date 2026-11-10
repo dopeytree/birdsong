@@ -8,7 +8,7 @@ bird sized by how often it called. It is one small Docker container with
 one setting.
 
 Created by [Ed Stone](https://ed-stone.co.uk). Current version: 0.42
-([changelog](CHANGELOG.md)).
+([changelog](CHANGELOG.md)); images are also tagged by version, e.g. `:0.42`.
 
 ## See it in action
 

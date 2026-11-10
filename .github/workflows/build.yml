@@ -24,6 +24,8 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - id: version
+        run: echo "version=$(cat VERSION)" >> "$GITHUB_OUTPUT"
       - id: meta
         uses: docker/metadata-action@v5
         with:
@@ -31,6 +33,7 @@ jobs:
           tags: |
             type=raw,value=latest
             type=raw,value={{date 'YYYYMMDD'}}
+            type=raw,value=${{ steps.version.outputs.version }}
             type=semver,pattern={{version}}
       - uses: docker/build-push-action@v6
         with:
