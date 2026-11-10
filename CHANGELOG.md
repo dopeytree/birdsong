@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Fixed: the container failed to start with Unraid's per-container
+  Tailscale enabled (`nginx: invalid option: "off"`).
+- Fixed: a trailing slash on `BIRDNET_URL` is now removed as intended
+  (the start-up script was not executable and was being skipped).
+
 ## 0.42 — 2026-11-10
 
 First public release.
