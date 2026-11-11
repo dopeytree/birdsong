@@ -797,13 +797,14 @@ async function openDetail(sp) {
   if (plate) { img.src = plate.large || plate.src; img.alt = "Plate of " + sp.common; img.classList.toggle("ink", !!plate.ready); }
   $("#dCredit").innerHTML = plate ? esc(plate.credit || "") + (plate.page ? ' <a href="' + esc(plate.page) + '" target="_blank" rel="noopener">View the source</a>' : "") : "No plate has been found for this species.";
   renderFacts(sp, null);
-  $("#dBlurb").textContent = ""; loadBlurb(sp);
+  $("#dBlurb").textContent = "";
   renderBars($("#hours"), sp.hourly, (n, h) => h + ":00, " + calls(n)); $("#dHoursWrap").hidden = !sp.hourly;
   $("#dHoursLabel").textContent = period === "today" ? "Calls by hour, today" : "Calls by hour of the day, over this period";
   $("#dTrendWrap").hidden = true; $("#dRecWrap").hidden = true; stopAudio();
   loadExtras(sp);
   $("#alts").replaceChildren(); $("#altLabel").style.display = "none";
   if (!detail.open) detail.showModal();
+  loadBlurb(sp);
   const alts = [...frPlates(sp.sci), ...kbPlates(sp.sci), ...(await commonsPlates(sp.sci))];
   if ($("#dSci").textContent !== sp.sci || alts.length < 2 && !(alts.length === 1 && (!plate || plate.src !== alts[0].src))) return;
   $("#altLabel").style.display = "";
@@ -868,7 +869,7 @@ async function loadBlurb(sp) {
       if (r.ok || r.status === 404) store.set("wiki2." + sp.sci, b);
     } catch (e) { return; }
   }
-  if (!b.text || !detail.open || $("#dSci").textContent !== sp.sci) return;
+  if (!b.text || $("#dSci").textContent !== sp.sci) return;   // the card still shows this bird
   $("#dBlurb").innerHTML = esc(b.text) + (b.url ? ' <a href="' + esc(b.url) + '" target="_blank" rel="noopener">Wikipedia</a>' : "");
 }
 

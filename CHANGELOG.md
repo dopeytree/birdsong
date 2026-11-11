@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Fixed: a bird's description was shown the first time its card was opened
+  and never again. The description was written into the card before the card
+  was shown, which only worked while the text was still being fetched; once
+  it was remembered in the browser it arrived too early and was dropped.
+
 - New: draw the plate from a public BirdWeather station, such as a PUC,
   instead of BirdNET-Go. Set `BIRDWEATHER_STATION` to the station's
   number, or enter it under Station settings. nginx forwards `/graphql`
