@@ -16,6 +16,16 @@ server {
         proxy_read_timeout 60s;
     }
 
+    # Which station the page should read; written at start-up (see 05-birdnet-url.envsh).
+    location = /source.json {
+        alias /etc/nginx/birdsong.d/source.json;
+        default_type application/json;
+        add_header Cache-Control "no-store";
+    }
+
+    # /graphql to BirdWeather, present only when BIRDWEATHER_STATION is set.
+    include /etc/nginx/birdsong.d/*.conf;
+
     # Artwork and typefaces never change within one image version.
     location /art/   { expires 7d; add_header Cache-Control "public"; }
     location /fonts/ { expires 30d; add_header Cache-Control "public"; }

@@ -217,13 +217,16 @@ dd.big{color:var(--madder);font-size:1.3rem;line-height:1.2}
     <label for="srv">Address of BirdNET-Go</label>
     <input id="srv" type="text" inputmode="url" placeholder="http://192.168.1.50:8080" autocomplete="off">
     <p>Leave empty to use the address given to the container as <code>BIRDNET_URL</code>.</p>
+    <label for="stn">Or a BirdWeather station</label>
+    <input id="stn" type="text" inputmode="numeric" placeholder="12345" autocomplete="off">
+    <p>The number at the end of a public station's page, <i>app.birdweather.com/stations/12345</i>. When filled in, the plate is drawn from that station instead of BirdNET-Go. Leave empty to use what the container was given as <code>BIRDWEATHER_STATION</code>, if anything.</p>
     <label class="check"><input type="checkbox" id="fitOpt"> Fit everything on one screen</label>
     <p>Shrinks the collage so the index of species sits beneath it with no scrolling.</p>
     <button class="btn" value="save">Save and reload</button>
     <button class="btn" value="sample" type="button" id="showSample">Show the sample plate</button>
   </form>
   <h4>Credits</h4>
-  <p class="credits">Birdsong v0.42. Created by <a href="https://ed-stone.co.uk" target="_blank" rel="noopener">Ed Stone</a>. Detections by BirdNET-Go. Bird cut-outs from the <a href="https://github.com/arnegiacomo/fugleramme">Fugleramme</a> project by Arne Giacomo, after Gould, the von Wright brothers, Audubon and others, used under CC BY-SA 4.0. Descriptions from Wikipedia, CC BY-SA. Further plates from <i>Nederlandsche Vogelen</i> (Nozeman &amp; Sepp, Amsterdam, 1770–1829), digitised by the Koninklijke Bibliotheek, with others from public-domain works held on Wikimedia Commons.</p>
+  <p class="credits">Birdsong v0.42. Created by <a href="https://ed-stone.co.uk" target="_blank" rel="noopener">Ed Stone</a>. Detections by <span id="srcName">BirdNET-Go</span>. Bird cut-outs from the <a href="https://github.com/arnegiacomo/fugleramme">Fugleramme</a> project by Arne Giacomo, after Gould, the von Wright brothers, Audubon and others, used under CC BY-SA 4.0. Descriptions from Wikipedia, CC BY-SA. Further plates from <i>Nederlandsche Vogelen</i> (Nozeman &amp; Sepp, Amsterdam, 1770–1829), digitised by the Koninklijke Bibliotheek, with others from public-domain works held on Wikimedia Commons.</p>
 </dialog>
 
 <script>
@@ -336,11 +339,31 @@ const calls = n => n.toLocaleString() + (n === 1 ? " call" : " calls");
 function roman(n) { const t = [[1000,"M"],[900,"CM"],[500,"D"],[400,"CD"],[100,"C"],[90,"XC"],[50,"L"],[40,"XL"],[10,"X"],[9,"IX"],[5,"V"],[4,"IV"],[1,"I"]]; let s = ""; for (const [v, r] of t) while (n >= v) { s += r; n -= v; } return s; }
 function when(s) {
   if (!s) return "";
-  const d = new Date(String(s).replace(" ", "T"));
+  const dateOnly = /^\d{4}-\d\d-\d\d$/.test(s);   // a bare date is a local day, not midnight UTC (which reads as the day before west of Greenwich)
+  const d = new Date(dateOnly ? s + "T12:00" : String(s).replace(" ", "T"));
   if (isNaN(d)) return String(s);
   const sameDay = ymd(d) === ymd(new Date());
+  if (dateOnly) return sameDay ? "today" : d.toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" });
   const time = d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
   return sameDay ? "today at " + time : d.toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" }) + (/\d:\d/.test(s) ? ", " + time : "");
+}
+
+/* ===================================================================
+   Where the detections come from: BirdNET-Go (the default), or a public
+   BirdWeather station such as a PUC. The station comes from ?station=,
+   this browser's settings, or the container's BIRDWEATHER_STATION (served
+   as source.json). A BirdNET-Go address set in this browser beats the
+   container's station; a station set in this browser beats everything.
+   =================================================================== */
+const SOURCE = { bw: "", endpoint: "https://app.birdweather.com/graphql", name: "BirdNET-Go" };
+async function loadSource() {
+  const digits = v => String(v || "").replace(/\D/g, "");
+  let srv = {};
+  try { const r = await fetch("source.json", { cache: "no-store" }); if (r.ok) srv = await r.json(); } catch (e) {}
+  SOURCE.bw = digits(params.get("station")) || digits(store.get("station", "")) || (server ? "" : digits(srv.birdweatherStation));
+  if (srv.proxy) SOURCE.endpoint = "graphql";   // the container forwards to BirdWeather: one address, no cross-site requests
+  if (SOURCE.bw) SOURCE.name = "BirdWeather";
+  $("#srcName").textContent = SOURCE.name;
 }
 
 /* ===================================================================
@@ -350,6 +373,7 @@ let period = store.get("period", "week");
 
 async function fetchSpecies() {
   if (demo) return sample();
+  if (SOURCE.bw) return fetchSpeciesBW();
   let path;
   if (period === "today") path = "/api/v2/analytics/species/daily?date=" + ymd(new Date());
   else if (period === "all") path = "/api/v2/analytics/species/summary";
@@ -371,6 +395,57 @@ async function fetchSpecies() {
     season: o.current_season || "", daysKnown: o.days_since_first_seen || 0,
     thumb: o.thumbnail_url ? (/^https?:/.test(o.thumbnail_url) ? o.thumbnail_url : server + o.thumbnail_url) : ""
   })).filter(s => s.sci && s.count > 0).sort((a, b) => b.count - a.count);
+}
+
+/* ===================================================================
+   Detections from a BirdWeather station, through its public GraphQL API
+   (https://app.birdweather.com/api/). No token is needed for public stations.
+   =================================================================== */
+const BW = { checked: false, since: "", tz: "" };
+
+async function gql(query, variables) {
+  const r = await fetch(SOURCE.endpoint, { method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify({ query, variables }) });
+  if (!r.ok) throw new Error("BirdWeather answered with error " + r.status + ".");
+  const j = await r.json();
+  if (j.errors && j.errors.length) throw new Error("BirdWeather station " + SOURCE.bw + " could not be read (" + (j.errors[0].message || "query refused") + "). Check the station number, and that the station is public.");
+  return j.data || {};
+}
+
+/* Dates for a period. "to" is tomorrow so today is included whether BirdWeather treats it as inclusive or not. */
+function bwPeriod(p) {
+  const to = ymd(daysAgo(-1));
+  if (p === "all") return { from: BW.since || "2015-01-01", to };
+  return { from: ymd(p === "today" ? new Date() : daysAgo(p === "week" ? 6 : 29)), to };
+}
+
+/* Wall-clock date and time at the station, read straight from its timestamp, e.g. "2026-11-10T07:12:03-06:00". */
+const bwDate = ts => String(ts || "").slice(0, 10), bwTime = ts => String(ts || "").slice(11, 19);
+
+/* Date and hour at the station for a UTC bin such as "2026-11-05T13:00:00Z". */
+function bwLocal(key) {
+  const t = new Date(key);
+  try {
+    if (BW.tz) {
+      const p = {}; new Intl.DateTimeFormat("en-GB", { timeZone: BW.tz, year: "numeric", month: "2-digit", day: "2-digit", hour: "numeric", hourCycle: "h23" }).formatToParts(t).forEach(x => p[x.type] = x.value);
+      return { day: p.year + "-" + p.month + "-" + p.day, hour: Number(p.hour) };
+    }
+  } catch (e) {}
+  return { day: ymd(t), hour: t.getHours() };
+}
+
+async function fetchSpeciesBW() {
+  if (!BW.checked) {   // once: confirms the station exists and is public, and finds when its records begin
+    const d = await gql("query($id:ID!){station(id:$id){earliestDetectionAt timezone}}", { id: SOURCE.bw });
+    if (!d.station) throw new Error("BirdWeather has no public station " + SOURCE.bw + ".");
+    BW.since = bwDate(d.station.earliestDetectionAt); BW.tz = d.station.timezone || ""; BW.checked = true;
+  }
+  const d = await gql("query($ids:[ID!],$p:InputDuration){topSpecies(stationIds:$ids,period:$p,limit:500){count speciesId species{commonName scientificName thumbnailUrl}}}",
+    { ids: [SOURCE.bw], p: bwPeriod(period) });
+  return (d.topSpecies || []).map(o => {
+    const s = o.species || {};
+    return { sci: s.scientificName || "", common: s.commonName || s.scientificName || "Unnamed", count: Number(o.count || 0), bwId: o.speciesId,
+      first: "", last: "", hourly: null, maxConf: 0, avgConf: 0, daysKnown: 0, thumb: s.thumbnailUrl || "" };
+  }).filter(s => s.sci && s.count > 0).sort((a, b) => b.count - a.count);
 }
 
 function sample() {
@@ -438,7 +513,7 @@ async function choosePlates(sp) {
   if (kb.length) return [kb[0]];
   const c = await commonsPlates(sp.sci);
   if (c.length) return c.slice(0, 6);
-  if (sp.thumb) return [{ src: sp.thumb, large: sp.thumb, photo: true, credit: "No engraved plate found. Photograph supplied by BirdNET-Go." }];
+  if (sp.thumb) return [{ src: sp.thumb, large: sp.thumb, photo: true, credit: "No engraved plate found. Photograph supplied by " + SOURCE.name + "." }];
   return [];
 }
 
@@ -551,7 +626,7 @@ async function makeFigure(sp, plates) {
   if (whole) { whole.img.alt = ""; return { el: whole.img, aspect: whole.img.naturalWidth / whole.img.naturalHeight, plate: whole.plate }; }
   const ph = plates.find(p => p.photo), photo = (ph && ph.src) || sp.thumb;
   if (photo) {
-    try { const img = await loadImage(photo, false); img.alt = ""; return { el: img, aspect: img.naturalWidth / img.naturalHeight, plate: ph || { src: photo, large: photo, photo: true, credit: "Photograph supplied by BirdNET-Go." } }; } catch (e) {}
+    try { const img = await loadImage(photo, false); img.alt = ""; return { el: img, aspect: img.naturalWidth / img.naturalHeight, plate: ph || { src: photo, large: photo, photo: true, credit: "Photograph supplied by " + SOURCE.name + "." } }; } catch (e) {}
   }
   const el = document.createElement("span"); el.textContent = sp.common; return { el, aspect: 1.7, blank: true, plate: null };
 }
@@ -678,7 +753,9 @@ async function refresh(initial) {
     catch (e) {
       if (!initial && species.length) { busy = false; return; }   // keep what we have through a hiccup
       demo = true; rows = sample();
-      const msg = e instanceof TypeError ? "BirdNET-Go could not be reached" + (server ? " at " + server : " through this page's address") + "." : e.message;
+      const msg = !(e instanceof TypeError) ? e.message
+        : SOURCE.bw ? "BirdWeather could not be reached" + (SOURCE.endpoint === "graphql" ? " through this page's address" : "") + "."
+        : "BirdNET-Go could not be reached" + (server ? " at " + server : " through this page's address") + ".";
       $("#notice").innerHTML = esc(msg) + " Showing a sample plate instead. <button id='fix'>Open station settings</button>";
       $("#fix").addEventListener("click", () => openSettings());
     }
@@ -798,6 +875,8 @@ async function loadBlurb(sp) {
 const player = $("#player");
 function stopAudio() { player.pause(); document.querySelectorAll("#recs button").forEach(b => b.textContent = "Play"); }
 player.addEventListener("ended", stopAudio);
+player.addEventListener("pause", () => document.querySelectorAll("#recs button").forEach(b => b.textContent = "Play"));
+player.addEventListener("timeupdate", () => { if (player.dataset.end && player.currentTime >= +player.dataset.end) player.pause(); });   // a BirdWeather clip stops at the end of the call
 
 async function getJSON(path) { const r = await fetch(server + path, { headers: { Accept: "application/json" } }); if (!r.ok) throw new Error(r.status); return r.json(); }
 
@@ -811,6 +890,66 @@ async function loadExtras(sp) {
     showTrend(Array.from({ length: 30 }, (_, i) => ({ date: ymd(daysAgo(29 - i)), count: Math.round(sp.count / (period === "today" ? 1 : 6) * (.3 + rnd() * 1.1)) })));
     showRecs([0, 1, 2].map(i => ({ date: today, time: String(7 + i * 2).padStart(2, "0") + ":" + String(Math.floor(rnd() * 60)).padStart(2, "0") + ":00", confidence: .6 + rnd() * .38,
       weather: { description: ["light rain", "overcast", "clear"][i], temperature: 7 + i * 2 } })), false);
+    return;
+  }
+
+  if (SOURCE.bw) {   // the same particulars from BirdWeather; it has no family, order, rarity, weather or spectrograms to offer
+    const ids = [SOURCE.bw], sid = sp.bwId;
+    if (!sid) return;
+
+    // Calls by hour. BirdWeather groups by the hour only for spans of about a week or less (longer spans
+    // come back by the day), so the longer periods show the last seven days' pattern, and say so.
+    const short = period === "today" || period === "week", hp = bwPeriod(short ? period : "week");
+    gql("query($sp:ID,$ids:[ID!],$p:InputDuration){species(id:$sp){detectionCounts(period:$p,group:60,stationIds:$ids){bins{key count}}}}",
+      { sp: sid, ids, p: hp }).then(d => {
+      if (!still()) return;
+      const bins = ((((d.species || {}).detectionCounts) || {}).bins || []).filter(b => b.key);
+      const times = bins.map(b => new Date(b.key)).filter(t => !isNaN(t)).sort((a, b) => a - b);
+      if (times.length < 2 || times.some((t, i) => i && t - times[i - 1] >= 864e5)) return;   // not hourly after all: leave the chart off
+      const h = new Array(24).fill(0);
+      bins.forEach(b => { const l = bwLocal(b.key); if (l.day >= hp.from && l.day <= today && l.hour >= 0 && l.hour < 24) h[l.hour] += b.count; });   // UTC bins start the evening before, at the station
+      renderBars($("#hours"), h, (n, i) => i + ":00, " + calls(n)); $("#dHoursWrap").hidden = false;
+      if (!short) $("#dHoursLabel").textContent = "Calls by hour of the day, the last seven days";
+    }).catch(() => {});
+
+    // Every day this bird has been heard at the station: gives the thirty-day trend, the first day heard
+    // in this period and the first day ever. (BirdWeather lists detections newest first and can't be
+    // asked for the oldest, so first heard is a date rather than a time.)
+    const daily = gql("query($ids:[ID!],$sps:[ID!],$p:InputDuration){dailyDetectionCounts(stationIds:$ids,speciesIds:$sps,period:$p){date counts{speciesId count}}}",
+      { ids, sps: [sid], p: bwPeriod("all") }).then(d => {
+      const got = {};
+      (d.dailyDetectionCounts || []).forEach(r => {
+        const n = (r.counts || []).filter(c => String(c.speciesId) === String(sid)).reduce((a, c) => a + c.count, 0);
+        if (n) got[String(r.date).slice(0, 10)] = n;
+      });
+      if (still()) showTrend(Array.from({ length: 30 }, (_, i) => { const day = ymd(daysAgo(29 - i)); return { date: day, count: got[day] || 0 }; }));
+      return Object.keys(got).sort();
+    }).catch(() => []);
+
+    // The latest recordings, and the latest call in this period (at most three detection lists per query).
+    const node = "nodes{id timestamp confidence soundscape{url startTime endTime}}";
+    const recent = gql("query($ids:[ID!],$sp:ID,$p:InputDuration,$all:InputDuration){" +
+        "recent:detections(stationIds:$ids,speciesId:$sp,period:$all,first:4){" + node + "}" +
+        "latest:detections(stationIds:$ids,speciesId:$sp,period:$p,first:1){nodes{timestamp}}}",
+      { ids, sp: sid, p: bwPeriod(period), all: bwPeriod("all") }).then(d => {
+      const byNewest = (a, b) => new Date(b.timestamp) - new Date(a.timestamp);
+      const recs = ((d.recent || {}).nodes || []).filter(n => n && n.timestamp).sort(byNewest).map(n => {
+        const s = n.soundscape || {};
+        return { date: bwDate(n.timestamp), time: bwTime(n.timestamp), confidence: n.confidence || 0, audio: s.url || "",
+          clip: s.endTime > s.startTime ? [Math.max(0, s.startTime - 1), s.endTime + 1] : null };   // the call, with a second either side
+      });
+      if (still() && recs.length) showRecs(recs, true);
+      return (((d.latest || {}).nodes || []).filter(n => n && n.timestamp).sort(byNewest)[0] || {}).timestamp || "";
+    }).catch(() => "");
+
+    Promise.all([daily, recent]).then(([days, last]) => {
+      if (!still()) return;
+      const start = bwPeriod(period).from, inPeriod = days.filter(x => x >= start);
+      renderFacts(Object.assign({}, sp, {
+        first: inPeriod[0] || "", last,
+        daysKnown: days.length ? Math.round((new Date(ymd(new Date()) + "T12:00") - new Date(days[0] + "T12:00")) / 864e5) : 0   // days since first heard, as BirdNET-Go counts them
+      }), null);
+    });
     return;
   }
 
@@ -844,16 +983,19 @@ async function loadExtras(sp) {
   }
   function showRecs(rows, live) {
     const spec = $("#spec"); spec.hidden = true;
-    if (live && rows[0].id != null) { spec.onload = () => spec.hidden = false; spec.onerror = () => spec.hidden = true; spec.src = server + "/api/v2/spectrogram/" + rows[0].id + "?size=md"; }
+    if (live && !SOURCE.bw && rows[0].id != null) { spec.onload = () => spec.hidden = false; spec.onerror = () => spec.hidden = true; spec.src = server + "/api/v2/spectrogram/" + rows[0].id + "?size=md"; }
     $("#recs").replaceChildren(...rows.map(r => {
       const li = document.createElement("li"), w = r.weather || {};
       const wx = [w.description || w.weatherMain || "", w.temperature || w.temperature === 0 ? Math.round(w.temperature) + "°" : ""].filter(Boolean).join(", ");
       li.innerHTML = "<span>" + esc(dayLabel(r.date) + ", " + String(r.time || "").slice(0, 5)) + "</span><span>" + pct(r.confidence || 0) + '</span><span class="w">' + esc(wx) + "</span>";
-      if (live && r.id != null && !r.spectrogramOnly) {
+      const audio = r.audio !== undefined ? r.audio : (r.id != null && !r.spectrogramOnly ? server + "/api/v2/audio/" + r.id : "");
+      if (live && audio) {
         const b = document.createElement("button"); b.textContent = "Play"; b.setAttribute("aria-label", "Play the recording from " + dayLabel(r.date) + " at " + String(r.time || "").slice(0, 5));
         b.addEventListener("click", () => {
           const playing = b.textContent === "Stop"; stopAudio(); if (playing) return;
-          player.src = server + "/api/v2/audio/" + r.id; player.play().then(() => b.textContent = "Stop").catch(() => { b.textContent = "Play"; });
+          player.dataset.end = r.clip ? r.clip[1] : "";
+          if (r.clip) player.addEventListener("loadedmetadata", () => { player.currentTime = r.clip[0]; }, { once: true });
+          player.src = audio; player.play().then(() => b.textContent = "Stop").catch(() => { b.textContent = "Play"; });
         });
         li.prepend(b);
       }
@@ -866,12 +1008,14 @@ detail.addEventListener("close", stopAudio);
 
 /* ---------- settings ---------- */
 const settings = $("#settings");
-function openSettings() { $("#srv").value = store.get("server", "") || CONFIG.server; $("#fitOpt").checked = fit; settings.showModal(); }
+function openSettings() { $("#srv").value = store.get("server", "") || CONFIG.server; $("#stn").value = store.get("station", ""); $("#fitOpt").checked = fit; settings.showModal(); }
 $("#fitOpt").addEventListener("change", e => { fit = e.target.checked; store.set("fit", fit); layout(); });
 $("#openSettings").addEventListener("click", openSettings);
 $("#setForm").addEventListener("submit", () => {
   const v = $("#srv").value.trim().replace(/\/+$/, "");
   if (v) store.set("server", /^https?:\/\//.test(v) ? v : "http://" + v); else store.del("server");
+  const st = ($("#stn").value.match(/(\d+)\s*\/?\s*$/) || [])[1];   // accepts the number or the whole station address
+  if (st) store.set("station", st); else store.del("station");
   location.href = location.pathname;
 });
 $("#showSample").addEventListener("click", () => { location.href = location.pathname + "?demo"; });
@@ -880,7 +1024,7 @@ document.querySelectorAll("dialog").forEach(d => d.addEventListener("click", e =
 
 let rz; addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(layout, 150); });
 renderHeading();
-loadFugleramme().then(() => refresh(true));
+Promise.all([loadFugleramme(), loadSource()]).then(() => refresh(true));
 setInterval(() => { if (!document.hidden && !demo) refresh(false); }, CONFIG.refreshSeconds * 1000);
 </script>
 </body>
