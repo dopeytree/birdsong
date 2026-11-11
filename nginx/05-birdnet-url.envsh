@@ -1,3 +1,61 @@
 #!/bin/sh
 # A trailing slash on BIRDNET_URL would make nginx drop the /api prefix; remove it.
 export BIRDNET_URL="${BIRDNET_URL%/}"
+
+# --- BirdWeather station (optional) -------------------------------------------
+# BIRDWEATHER_STATION is the number at the end of a public station's page,
+# https://app.birdweather.com/stations/<number>. When it is set, the page reads
+# that station's detections from BirdWeather instead of BirdNET-Go, and nginx
+# forwards /graphql to BirdWeather so the page and its data keep one address.
+EXTRA=/etc/nginx/birdsong.d
+mkdir -p "$EXTRA"
+rm -f "$EXTRA"/*.conf
+
+# Accept the bare number or the whole station address.
+station=$(printf '%s' "${BIRDWEATHER_STATION:-}" | tr -d '[:space:]' | sed -E 's#^.*/stations/([0-9]+).*$#\1#')
+case "$station" in
+  "") station="" ;;
+  *[!0-9]*)
+    echo "birdsong: BIRDWEATHER_STATION should be the station's number, e.g. 12345; ignoring \"$station\"" >&2
+    station="" ;;
+esac
+
+if [ -n "$station" ]; then
+  # nginx resolves a fixed upstream once at start-up and fails to start if it
+  # can't; asking the container's own resolver at request time avoids both.
+  ns=$(awk '/^nameserver/ { print $2; exit }' /etc/resolv.conf 2>/dev/null)
+  case "$ns" in *:*) ns="[$ns]" ;; esac
+  if [ -z "$ns" ]; then
+    echo "birdsong: no DNS server in /etc/resolv.conf; the page will ask BirdWeather directly" >&2
+    proxy=false
+  else
+    proxy=true
+    cat > "$EXTRA/birdweather.conf" <<EOF
+# Written at start-up because BIRDWEATHER_STATION=$station.
+location = /graphql {
+    limit_except POST { deny all; }
+    resolver $ns valid=300s;
+    set \$birdweather https://app.birdweather.com;
+    proxy_pass \$birdweather/graphql;
+    proxy_ssl_server_name on;
+    proxy_ssl_name app.birdweather.com;
+    proxy_set_header Host app.birdweather.com;
+    proxy_set_header Origin "";
+    proxy_set_header Referer "";
+    proxy_set_header Cookie "";
+    proxy_hide_header Set-Cookie;
+    proxy_read_timeout 30s;
+}
+EOF
+  fi
+  printf '{"birdweatherStation":"%s","proxy":%s}\n' "$station" "$proxy" > "$EXTRA/source.json"
+
+  # The page no longer needs BirdNET-Go, but nginx still refuses to start if the
+  # unused /api upstream can't be resolved, so point the image's default at a
+  # local address that always resolves.
+  if [ "$BIRDNET_URL" = "http://birdnet-go:8080" ]; then
+    export BIRDNET_URL="http://127.0.0.1:9"
+  fi
+else
+  printf '{}\n' > "$EXTRA/source.json"
+fi

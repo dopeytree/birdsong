@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- New: draw the plate from a public BirdWeather station, such as a PUC,
+  instead of BirdNET-Go. Set `BIRDWEATHER_STATION` to the station's
+  number, or enter it under Station settings. nginx forwards `/graphql`
+  to BirdWeather's public API only when the setting is present. The card
+  shows what BirdWeather offers: calls by hour and by day, first heard (as
+  a date) and last heard, days known at the station, and the latest
+  recordings with playback of just the call.
+- Fixed: a first-heard date without a time no longer shows as the day
+  before for stations west of Greenwich.
 - Fixed: the container failed to start with Unraid's per-container
   Tailscale enabled (`nginx: invalid option: "off"`).
 - Fixed: a trailing slash on `BIRDNET_URL` is now removed as intended

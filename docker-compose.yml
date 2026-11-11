@@ -11,3 +11,6 @@ services:
     environment:
       # Address of your BirdNET-Go, as reachable from this container
       BIRDNET_URL: "http://192.168.1.50:8080"
+      # Or, instead, a public BirdWeather station (e.g. a PUC): the number at
+      # the end of https://app.birdweather.com/stations/<number>
+      # BIRDWEATHER_STATION: "12345"
