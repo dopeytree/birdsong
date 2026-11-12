@@ -19,6 +19,13 @@ Created by [Ed Stone](https://ed-stone.co.uk). Current version: 0.42
 Shown at double speed; [the full recording](docs/birdsong-v0.42.mp4?raw=true) has sound,
 including a little owl heard in the small hours.
 
+- [Run it](#run-it)
+- [Birdweather Station](#from-a-birdweather-station)
+- [Settings](#settings)
+- [Home Assistant](#home-assistant)
+- [HTTPS with Tailscale](#https-with-tailscale)
+- [Credits & License](#credits-and-licences)
+
 ## What it shows
 
 - **The plate:** every species heard in the chosen period, sized by its
