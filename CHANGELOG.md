@@ -9,7 +9,8 @@
   several Home Assistant cards: `?view=plate`, `?view=index` and the
   one-bird views, each showing only its own subject, with `hide=`, `show=`,
   `period=` and `limit=` to adjust them.
-- Station settings can build a card's address for you, with a live preview.
+- Station settings can build a card's address for you, with a live preview
+  shaped like a real card. The panel is wider and laid out in two columns.
 - New single-bird views for a small card: `?view=latest` for the bird heard
   most recently, `?view=top` for the one heard most often, `?view=rare` for
   the one heard least.
