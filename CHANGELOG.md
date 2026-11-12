@@ -12,8 +12,8 @@
 - Settings can build a card's address for you, with a live preview
   shaped like a real card. The panel is one narrow column of four sections --
   station, show, card and credits -- of which one is open at a time, so it
-  sits on the screen without scrolling, and it is part transparent so a
-  change can be watched as it is made.
+  sits on the screen without scrolling. Its paper and the fade behind it
+  now match a bird's card, so the two look the same.
 - New single-bird views for a small card: `?view=latest` for the bird heard
   most recently, `?view=top` for the one heard most often, `?view=rare` for
   the one heard least. Top and rare give the count and the period, as
