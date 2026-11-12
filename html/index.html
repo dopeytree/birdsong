@@ -934,7 +934,11 @@ function sizeIndex() {
   // the browser gives every column the same height, so a list of seven over
   // six possible columns becomes four columns of two and two empty ones.
   // Work out how many columns really get used, and be only that wide.
-  const room = Math.max(1, Math.floor((el.clientWidth + gap) / (colW + gap)));
+  // measured on the parent: the list is still carrying the width it was last
+  // given, which would make the room available look like whatever it was then
+  const box = el.parentElement, bcs = getComputedStyle(box);
+  const avail = box.clientWidth - parseFloat(bcs.paddingLeft) - parseFloat(bcs.paddingRight);
+  const room = Math.max(1, Math.floor((avail + gap) / (colW + gap)));
   const used = Math.ceil(n / Math.ceil(n / room));
   el.style.maxWidth = (used * colW + (used - 1) * gap) + "px";
 }
