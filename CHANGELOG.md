@@ -30,6 +30,12 @@
 - The index of species is centred, rather than sitting in the leftmost
   columns of a wide page. Its columns are all the same height, so a short
   list left the ones on the right empty.
+- Fixed: on Today, the latest bird was whichever had called most, not the
+  one heard last. A day's own figures carry the clock alone, "20:56:36",
+  where a longer period carries the whole stamp; the bare clock did not
+  parse, so every time read as nothing and the comparison never found a
+  winner. The day goes back on them now, which also prints the time in
+  the same form as everywhere else.
 - Fixed: a bird's description was shown the first time its card was opened
   and never again. The description was written into the card before the card
   was shown, which only worked while the text was still being fetched; once
