@@ -108,7 +108,38 @@ the call, with a second either side) all work. Some things differ:
 
 The birdsong webpages are fully responsive & fully customisable thus suitable for use in homeassistant via the 'webpage' card.
 
-![Homeassistant cards](docs/Screenshot%202026-11-12%20at%2018.03.06.png) 
+![Homeassistant cards](docs/Screenshot%202026-11-12%20at%2019.09.38.png) 
+
+Click add a new view then paste in the below YAML or create your own
+
+```
+type: sections
+title: Tablet Home
+path: tablet-home
+icon: mdi:home-account
+sections:
+  - type: grid
+    cards:
+      - type: iframe
+        url: https://birdsong.server.ts.net/?view=latest&show=time
+        aspect_ratio: 100%
+      - type: vertical-stack
+        cards:
+          - type: iframe
+            url: https://birdsong.server.ts.net/?view=index&period=today&limit=15
+            aspect_ratio: 100%
+  - type: grid
+    cards:
+      - type: iframe
+        url: https://birdsong.server.ts.net/?view=plate&period=today&show=date,totals
+        aspect_ratio: 80%
+        grid_options:
+          rows: 8
+          columns: 12
+      - type: iframe
+        url: https://birdsong.server.ts.net/?view=top&period=week
+        aspect_ratio: 50%
+```
 
 For full screen - Add a view to a dashboard, give it the **Grid** layout, then add **Webpage**
 cards pointing at Birdsong. Each card carries its own settings in its
