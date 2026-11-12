@@ -8,8 +8,9 @@
 - The same settings can be put in the address, so one station can feed
   several Home Assistant cards: `?view=plate`, `?view=index`,
   `?view=latest`, with `hide=`, `show=` and `limit=`.
-- New single-bird view for a small card: the most recently heard bird, its
-  name and when it was heard.
+- New single-bird views for a small card: `?view=latest` for the bird heard
+  most recently, `?view=top` for the one heard most often, `?view=rare` for
+  the one heard least.
 
 - Fixed: a bird's description was shown the first time its card was opened
   and never again. The description was written into the card before the card

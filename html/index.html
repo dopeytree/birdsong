@@ -288,6 +288,8 @@ dd.big{color:var(--madder);font-size:1.3rem;line-height:1.2}
         <button class="btn" type="button" data-card="plate">Collage only</button>
         <button class="btn" type="button" data-card="index">Index only</button>
         <button class="btn" type="button" data-card="latest">Latest bird</button>
+        <button class="btn" type="button" data-card="top">Most heard</button>
+        <button class="btn" type="button" data-card="rare">Least heard</button>
       </div>
       <input id="cardUrl" type="text" readonly placeholder="Choose one above">
     </fieldset>
@@ -412,15 +414,16 @@ for (const p of PARTS) opt[p] = store.get("show." + p, true);
 opt.limit = Math.max(0, Number(params.get("limit")) || store.get("limit", 0));
 if (view === "plate") opt.index = false;
 if (view === "index") opt.plate = false;
-if (view === "latest") for (const p of PARTS) opt[p] = false;
+const SINGLE = { latest: "the last bird heard", top: "the most heard", rare: "the least heard" };
+if (SINGLE[view]) for (const p of PARTS) opt[p] = false;
 for (const [key, on] of [["hide", false], ["show", true]])
   for (const p of (params.get(key) || "").split(",")) if (PARTS.includes(p.trim())) opt[p.trim()] = on;
 
 function applyOptions() {
   for (const p of PARTS) document.body.classList.toggle("no-" + p, !opt[p]);
-  document.body.classList.toggle("latest", view === "latest");
+  document.body.classList.toggle("latest", !!SINGLE[view]);
   document.body.classList.toggle("card", !!view);   // a page being used as a card keeps no way into settings
-  $("#latest").hidden = view !== "latest";
+  $("#latest").hidden = !SINGLE[view];
 }
 const listed = () => opt.limit ? species.slice(0, opt.limit) : species;
 const ts = v => { const d = new Date(String(v || "").replace(" ", "T")); return isNaN(d) ? 0 : d.getTime(); };
@@ -884,13 +887,16 @@ document.querySelectorAll("nav button").forEach(b => b.addEventListener("click",
 /* ---------- the latest bird, for a card of its own ---------- */
 let latestOf = "";
 async function renderLatest() {
-  if (view !== "latest") return;
-  const list = listed();
-  if (!list.length) { latestOf = ""; $("#latestName").textContent = "Nothing heard yet."; return; }
-  const sp = list.reduce((a, b) => ts(b.last) > ts(a.last) ? b : a, list[0]);
+  if (!SINGLE[view]) return;
+  if (!species.length) { latestOf = ""; $("#latestName").textContent = "Nothing heard yet."; $("#latestFig").replaceChildren(); return; }
+  // the list arrives sorted by how often each bird called, so its ends are the most and least heard
+  const sp = view === "top" ? species[0]
+    : view === "rare" ? species[species.length - 1]
+    : species.reduce((a, b) => ts(b.last) > ts(a.last) ? b : a, species[0]);
   $("#latestName").textContent = sp.common;
   $("#latestSci").textContent = sp.sci;
-  $("#latestWhen").textContent = sp.last ? "Heard " + when(sp.last) : calls(sp.count);
+  $("#latestWhen").textContent = view === "latest" ? (sp.last ? "Heard " + when(sp.last) : calls(sp.count))
+    : (view === "top" ? "Most heard: " : "Least heard: ") + calls(sp.count);
   if (latestOf === sp.sci) return;              // same bird: leave the picture alone
   latestOf = sp.sci;
   const fig = await makeFigure(sp, await choosePlates(sp));
@@ -1140,7 +1146,7 @@ function cardURL(v) {
   if (v) u.searchParams.set("view", v);
   if (demo) u.searchParams.set("demo", "");
   const off = PARTS.filter(p => !opt[p] && !(v === "plate" && p === "index") && !(v === "index" && p === "plate"));
-  if (v !== "latest" && off.length) u.searchParams.set("hide", off.join(","));
+  if (!SINGLE[v] && off.length) u.searchParams.set("hide", off.join(","));
   if (opt.limit) u.searchParams.set("limit", opt.limit);
   return decodeURIComponent(u.href);
 }

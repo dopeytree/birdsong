@@ -107,6 +107,12 @@ so the collage, the index and the latest bird can sit side by side:
 | Collage only | `http://192.168.1.50:8095/?view=plate` |
 | Index only | `http://192.168.1.50:8095/?view=index` |
 | Latest bird | `http://192.168.1.50:8095/?view=latest` |
+| Most heard | `http://192.168.1.50:8095/?view=top` |
+| Least heard | `http://192.168.1.50:8095/?view=rare` |
+
+The last three fill the card with a single bird: the one heard most
+recently, the one heard most often in the chosen period, or the one heard
+least.
 
 Station settings builds these for you: set what you want shown, then use the
 buttons under **Address for a Home Assistant card** to copy one.
