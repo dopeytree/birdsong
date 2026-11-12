@@ -101,10 +101,13 @@ Add a view to a dashboard, give it the **Grid** layout, then add **Webpage**
 cards pointing at Birdsong. Each card carries its own settings in its
 address, so one station can feed several cards showing different things.
 
-**Settings builds the addresses for you.** Under *Home Assistant
-card*, pick what the card should show, choose a period and a species limit,
-and watch the preview; then copy the address. The rest of this section is
-what those addresses mean, if you would rather write them by hand.
+**Settings builds the addresses for you.** Open *Settings* on the page,
+then *Home Assistant card*: pick the view, tick the parts it should show,
+choose a period and a species limit, and watch the preview take the shape
+of a real card. Then copy the address. The rest of this section is what
+those addresses mean, if you would rather write them by hand.
+
+<!-- Screenshots of the card views belong here. -->
 
 ### Views
 
@@ -176,8 +179,8 @@ a collage card to keep the birds large.
     the whole page, trimmed of its heading furniture
 
 A card address never shows the settings link, so set the station up on the
-main page first. Anything you do not put in the address follows Station
-settings for that browser.
+main page first. Anything you do not put in the address follows Settings
+for that browser.
 
 If Home Assistant is opened over HTTPS, the browser will refuse to embed a
 plain-HTTP page inside it: serve Birdsong over HTTPS (see below) and use
@@ -233,17 +236,40 @@ recordings come from BirdWeather.
 
 ## Settings
 
-"Settings" on the page holds one-screen mode, an optional
-BirdNET-Go address override, an optional BirdWeather station (which takes
-precedence over both BirdNET-Go and the container's station), and the
-credits. These settings, the last
-period chosen, and any illustration you pick for a bird are remembered
-per browser, not shared between devices.
+**Settings** on the page opens a panel of four sections, one open at a
+time so the panel stays on the screen:
+
+- **Station** — an optional BirdNET-Go address, overriding `BIRDNET_URL`;
+  an optional BirdWeather station, which takes precedence over both
+  BirdNET-Go and the container's station; *Save and reload*; and *Show
+  the sample plate*, the same sample as `/?demo`.
+- **Show** — one-screen mode, then a switch for each part of the page:
+  title, date, species and call totals, plate number, period buttons,
+  the collage and the index, with *Limit species* to cap how many birds
+  are drawn. These are the same parts a card address names with `hide=`
+  and `show=`.
+- **Home Assistant card** — the card builder above.
+- **Credits** — the artwork, the typeface and the sources.
+
+All of this, the last period chosen, and any illustration you pick for a
+bird are remembered per browser, not shared between devices. A card
+address overrides them for that card alone.
 
 ## Build it yourself
 
     docker build -t birdsong .
     docker build --build-arg FUGLERAMME_REF=v0.21.3 -t birdsong .   # pin the artwork
+
+To try a branch or a pull request before it is merged, build straight from
+GitHub and run it on a spare port:
+
+    docker build -t birdsong:test https://github.com/dopeytree/birdsong.git#the-branch
+    docker run -d --name birdsong-test -p 8096:80 \
+      -e BIRDNET_URL=http://192.168.1.50:8080 birdsong:test
+
+A pull request's branch name is under its title on GitHub, after *wants to
+merge ... from*. Remove the test container with
+`docker rm -f birdsong-test` when you are done.
 
 To pin a species to an illustration of your choice for everyone, add it
 to `CURATED_RAW` near the top of the script in `html/index.html`.
