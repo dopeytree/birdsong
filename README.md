@@ -37,7 +37,7 @@ including a little owl heard in the small hours.
     spectrogram
   - other illustrations of the species to choose from
 - **One-screen mode** (on by default): the plate shrinks so the index
-  fits beneath it without scrolling. Switch it off under Station settings.
+  fits beneath it without scrolling. Switch it off under Settings.
 
 ## Run it
 
@@ -79,7 +79,7 @@ BirdNET-Go. To draw its plate, give the station's number instead of
 The station must be public; no token is needed. nginx forwards `/graphql`
 to BirdWeather's public API so the page and its data still share one
 address. Any BirdWeather station works, not only a PUC, and a station can
-also be chosen per browser under Station settings.
+also be chosen per browser under Settings.
 
 BirdWeather has less to say about each bird than BirdNET-Go does. The
 plate, the index, calls each day, last heard, how long the species has
@@ -97,14 +97,91 @@ the call, with a second either side) all work. Some things differ:
 
 ## Home Assistant
 
-To put Birdsong on a Home Assistant dashboard, add a new view and give it
-the **Grid** layout, then add a single **Webpage** (iframe) card with your
-Birdsong address, for example `http://192.168.1.50:8095`. One-screen mode
-(on by default) suits the card well.
+Add a view to a dashboard, give it the **Grid** layout, then add **Webpage**
+cards pointing at Birdsong. Each card carries its own settings in its
+address, so one station can feed several cards showing different things.
 
-If you open Home Assistant over HTTPS, the browser will refuse to embed a
-plain-HTTP page inside it: serve Birdsong through your reverse proxy with
-HTTPS and use that address in the card instead.
+**Settings builds the addresses for you.** Under *Home Assistant
+card*, pick what the card should show, choose a period and a species limit,
+and watch the preview; then copy the address. The rest of this section is
+what those addresses mean, if you would rather write them by hand.
+
+### Views
+
+`?view=` decides what the card is about. Each view shows **only its own
+subject** — no title, date, totals or buttons unless you ask for them.
+
+| Address | Card |
+|---|---|
+| `/` | the whole page, as you see it in a browser |
+| `/?view=plate` | the collage of birds, nothing else |
+| `/?view=index` | the index of species, nothing else |
+| `/?view=latest` | one bird: the last one heard |
+| `/?view=top` | one bird: the one heard most in the period |
+| `/?view=rare` | one bird: the one heard least in the period |
+
+`latest` is its own window of time, so `period=` does not apply to it.
+
+### Adding and removing parts
+
+`hide=` and `show=` take a comma-separated list. Which names apply depends
+on the view:
+
+| Name | What it is | Applies to |
+|---|---|---|
+| `title` | the word Birdsong | page, collage, index |
+| `date` | the date line | page, collage, index |
+| `totals` | the species and call totals | page, collage, index |
+| `number` | the plate number | page, collage, index |
+| `periods` | today / seven days / thirty days / all | page, collage, index |
+| `plate` | the collage of birds | page, collage, index |
+| `index` | the index of species | page, collage, index |
+| `name` | the bird's common name | the one-bird views |
+| `sci` | the bird's scientific name | the one-bird views |
+| `time` | when it was heard, *1:59 PM* — **off unless asked for** | `latest` |
+| `count` | *30 calls over seven days* | `top`, `rare` |
+
+So `?view=index` is the bare index, and `?view=index&show=date,periods`
+puts the date and the period buttons back above it. Going the other way,
+`?hide=title,number` trims the full page.
+
+### Period and how many species
+
+| Parameter | Does |
+|---|---|
+| `period=today` `week` `month` `all` | fixes the period for that card, whatever the page is set to |
+| `limit=20` | shows only the twenty most-heard species |
+
+`limit` is worth setting on an index card, which otherwise scrolls, and on
+a collage card to keep the birds large.
+
+### Examples
+
+    /?view=rare&period=today
+    one bird: today's least-heard, with its name and count
+
+    /?view=latest&show=time
+    the last bird heard, with the time it called
+
+    /?view=rare&period=week&hide=sci,count
+    the week's least-heard, picture and name only
+
+    /?view=index&limit=12&show=date
+    the twelve most-heard species, under the date
+
+    /?view=plate&show=periods&limit=24&period=month
+    a month's collage of 24 birds, with the period buttons
+
+    /?hide=title,number,totals
+    the whole page, trimmed of its heading furniture
+
+A card address never shows the settings link, so set the station up on the
+main page first. Anything you do not put in the address follows Station
+settings for that browser.
+
+If Home Assistant is opened over HTTPS, the browser will refuse to embed a
+plain-HTTP page inside it: serve Birdsong over HTTPS (see below) and use
+that address in the card instead.
 
 ## HTTPS with Tailscale
 
@@ -156,7 +233,7 @@ recordings come from BirdWeather.
 
 ## Settings
 
-"Station settings" on the page holds one-screen mode, an optional
+"Settings" on the page holds one-screen mode, an optional
 BirdNET-Go address override, an optional BirdWeather station (which takes
 precedence over both BirdNET-Go and the container's station), and the
 credits. These settings, the last

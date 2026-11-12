@@ -2,6 +2,24 @@
 
 ## Unreleased
 
+- Station settings can now switch off the title, date, totals, plate number,
+  period buttons, the collage and the index, and cap how many species are
+  shown.
+- The same settings can be put in the address, so one station can feed
+  several Home Assistant cards: `?view=plate`, `?view=index` and the
+  one-bird views, each showing only its own subject, with `hide=`, `show=`,
+  `period=` and `limit=` to adjust them.
+- Station settings can build a card's address for you, with a live preview
+  shaped like a real card. The panel is one narrow column of four sections --
+  station, show, card and credits -- of which one is open at a time, so it
+  sits on the screen without scrolling, and it is part transparent so a
+  change can be watched as it is made.
+- New single-bird views for a small card: `?view=latest` for the bird heard
+  most recently, `?view=top` for the one heard most often, `?view=rare` for
+  the one heard least. Top and rare give the count and the period, as
+  *30 calls over seven days*; the latest bird can show the time it called,
+  which is off unless asked for.
+
 - Fixed: a bird drawn to the very edge of its page came out cut off flat,
   most visibly as a sliced head on some crow plates. Applies to the plates
   Birdsong cuts out itself, not to the Fugleramme artwork.
