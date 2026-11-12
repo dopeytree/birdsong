@@ -72,7 +72,7 @@ nav button:hover{color:var(--ink)}
 section{padding:2.2rem clamp(1rem,4vw,3rem) 2.5rem;max-width:78rem;margin:0 auto}
 h2{font-family:var(--caps);font-weight:400;font-size:1.25rem;letter-spacing:.06em;text-align:center;margin:0 0 1rem}
 h2::before,h2::after{content:"";display:inline-block;width:3.5rem;height:1px;background:var(--rule);vertical-align:middle;margin:0 .9rem}
-#index{columns:16rem;column-gap:2.6rem;list-style:none;margin:0;padding:0}
+#index{columns:16rem;column-gap:2.6rem;list-style:none;margin:0 auto;padding:0}
 #index li{break-inside:avoid}
 #index button{display:flex;align-items:baseline;width:100%;text-align:left;padding:.08rem 0;gap:.4rem}
 #index button::after{content:"";order:1;flex:1;border-bottom:1px dotted var(--rule);transform:translateY(-.25em)}
@@ -472,6 +472,7 @@ function applyOptions() {
   document.body.classList.toggle("latest", !!SINGLE[view]);
   document.body.classList.toggle("card", !!view);   // a page being used as a card keeps no way into settings
   $("#latest").hidden = !SINGLE[view];
+  sizeIndex();   // one-screen mode uses narrower columns
 }
 const listed = () => opt.limit ? species.slice(0, opt.limit) : species;
 const ts = v => { const d = new Date(String(v || "").replace(" ", "T")); return isNaN(d) ? 0 : d.getTime(); };
@@ -914,6 +915,16 @@ function renderIndex() {
     b.innerHTML = '<span class="c">' + esc(sp.common) + (f && f.blank ? ' <span class="x">(no plate)</span>' : "") + '</span><span class="n">' + sp.count.toLocaleString() + "</span>";
     b.title = sp.sci; b.addEventListener("click", () => openDetail(sp)); li.append(b); return li;
   }));
+  sizeIndex();
+}
+
+// a handful of species would otherwise sit in the first few columns of a wide
+// page, so the list is given room for no more columns than it has entries and
+// centred in what is left
+function sizeIndex() {
+  const el = $("#index"), n = el.children.length, cs = getComputedStyle(el);
+  const colW = parseFloat(cs.columnWidth), gap = parseFloat(cs.columnGap) || 0;
+  el.style.maxWidth = n && colW ? (n * colW + (n - 1) * gap) + "px" : "";
 }
 
 let busy = false, lastSig = "";

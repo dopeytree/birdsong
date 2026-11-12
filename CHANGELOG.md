@@ -27,6 +27,8 @@
   most visibly as a sliced head on some crow plates. Applies to the plates
   Birdsong cuts out itself, not to the Fugleramme artwork.
 
+- The index of species is centred when there are few of them, rather than
+  sitting in the first couple of columns of a wide page.
 - Fixed: a bird's description was shown the first time its card was opened
   and never again. The description was written into the card before the card
   was shown, which only worked while the text was still being fetched; once
