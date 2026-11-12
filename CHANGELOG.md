@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Fixed: a bird drawn to the very edge of its page came out cut off flat,
+  most visibly as a sliced head on some crow plates. Applies to the plates
+  Birdsong cuts out itself, not to the Fugleramme artwork.
+
 - Fixed: a bird's description was shown the first time its card was opened
   and never again. The description was written into the card before the card
   was shown, which only worked while the text was still being fetched; once
