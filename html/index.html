@@ -534,12 +534,13 @@ function cutout(img) {
   }
   const med = a => a.sort((p, q) => p - q)[a.length >> 1], pr = med(rs), pg = med(gs), pb = med(bs);
   const dist = new Float32Array(W * H);
-  for (let y = m; y < H - m; y++) for (let X = m; X < W - m; X++) {
-    const k = y * W + X, i = k * 4, dr = d[i] - pr, dg = d[i + 1] - pg, db = d[i + 2] - pb;
+  for (let k = 0; k < W * H; k++) {
+    const i = k * 4, dr = d[i] - pr, dg = d[i + 1] - pg, db = d[i + 2] - pb;
     dist[k] = Math.sqrt(dr * dr + dg * dg + db * db);
   }
+  // Look for the figure away from the edges, where a scan's dark border lives.
   const S = 4, gw = Math.ceil(W / S), gh = Math.ceil(H / S), cnt = new Uint16Array(gw * gh);
-  for (let y = 0; y < H; y++) for (let X = 0; X < W; X++) if (dist[y * W + X] > 42) cnt[(y / S | 0) * gw + (X / S | 0)]++;
+  for (let y = m; y < H - m; y++) for (let X = m; X < W - m; X++) if (dist[y * W + X] > 42) cnt[(y / S | 0) * gw + (X / S | 0)]++;
   const R = 2, dl = new Uint8Array(gw * gh);
   for (let y = 0; y < gh; y++) for (let X = 0; X < gw; X++) {
     if (cnt[y * gw + X] < 3) continue;
@@ -570,12 +571,28 @@ function cutout(img) {
     if (k) tot += o.a; return k;
   });
   if (tot / (W * H) > .5) return null;                   // a full painted scene: leave it whole
+  // A bird drawn to the very edge of its page reaches into the margin the
+  // search above left out, and used to be cut off flat there. Follow its ink
+  // out into the margin, one pixel at a time: a scan's dark border is not
+  // joined to the bird, so it is still left behind.
+  const kept = k => keep[lab[((k / W | 0) / S | 0) * gw + ((k % W) / S | 0)]];
+  const extra = new Uint8Array(W * H), edge = [];
+  const reach = k => { if (!extra[k] && !kept(k) && dist[k] > 42) { extra[k] = 1; edge.push(k); } };
+  const spread = k => { const y = k / W | 0, X = k % W; if (X > 0) reach(k - 1); if (X < W - 1) reach(k + 1); if (y > 0) reach(k - W); if (y < H - 1) reach(k + W); };
+  for (let k = 0; k < W * H; k++) if (kept(k) && dist[k] > 42) spread(k);
+  while (edge.length) spread(edge.pop());
+  // and one pixel of fainter ink around that, for the same soft outline as the rest
+  const fringe = [];
+  for (let k = 0; k < W * H; k++) {
+    if (!extra[k]) continue;
+    const y = k / W | 0, X = k % W, soft = q => { if (!extra[q] && !kept(q) && dist[q] > 24) fringe.push(q); };
+    if (X > 0) soft(k - 1); if (X < W - 1) soft(k + 1); if (y > 0) soft(k - W); if (y < H - 1) soft(k + W);
+  }
+  for (const k of fringe) extra[k] = 1;
+
   // Edge of the figure: a narrow band for smooth outlines, nothing softer.
   const al = new Float32Array(W * H);
-  for (let k = 0; k < W * H; k++) {
-    const y = k / W | 0, X = k % W;
-    if (keep[lab[(y / S | 0) * gw + (X / S | 0)]]) al[k] = Math.max(0, Math.min(1, (dist[k] - 24) / 16));
-  }
+  for (let k = 0; k < W * H; k++) if (kept(k) || extra[k]) al[k] = Math.max(0, Math.min(1, (dist[k] - 24) / 16));
   // Paper reachable from the page edge is removed; pale areas enclosed by the figure stay solid.
   const outside = new Uint8Array(W * H), q = [];
   const push = k => { if (!outside[k] && al[k] < .5) { outside[k] = 1; q.push(k); } };
