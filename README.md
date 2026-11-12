@@ -97,9 +97,17 @@ the call, with a second either side) all work. Some things differ:
 
 ## Home Assistant
 
-Add a view to a dashboard, give it the **Grid** layout, then add **Webpage**
+The birdsong webpages are fully responsive & fully customisable thus suitable for use in homeassistant via the 'webpage' card.
+
+![Homeassistant cards](docs/Screenshot%202026-11-12%20at%2018.03.06.png) 
+
+For full screen - Add a view to a dashboard, give it the **Grid** layout, then add **Webpage**
 cards pointing at Birdsong. Each card carries its own settings in its
 address, so one station can feed several cards showing different things.
+
+For smaller cards - Create a new webpage card, then paste in your url from the homeassistant card creator in settings on the main birdsong webpage. Or see below for custom. 
+
+![Homeassistant cards creator](docs/Screenshot%202026-11-12%20at%2018.09.04.png) 
 
 **Settings builds the addresses for you.** Open *Settings* on the page,
 then *Home Assistant card*: pick the view, tick the parts it should show,
