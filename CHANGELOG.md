@@ -10,9 +10,10 @@
   one-bird views, each showing only its own subject, with `hide=`, `show=`,
   `period=` and `limit=` to adjust them.
 - Station settings can build a card's address for you, with a live preview
-  shaped like a real card. The panel is wider, boxed into station, show,
-  card and credits, laid out in up to three columns, and half
-  transparent so a change can be watched as it is made.
+  shaped like a real card. The panel is one narrow column of four sections --
+  station, show, card and credits -- of which one is open at a time, so it
+  sits on the screen without scrolling, and it is part transparent so a
+  change can be watched as it is made.
 - New single-bird views for a small card: `?view=latest` for the bird heard
   most recently, `?view=top` for the one heard most often, `?view=rare` for
   the one heard least. Top and rare give the count and the period, as

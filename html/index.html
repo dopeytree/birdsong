@@ -109,9 +109,7 @@ body.latest header,body.latest footer{display:none}
 #latestSci{font-style:italic;color:var(--sepia);margin:.1rem 0 0}
 #latestWhen{color:var(--madder);margin:.15rem 0 0}
 
-#settings fieldset{border:1px solid var(--rule);margin:1.2rem 0 1.7rem;padding:.7rem .9rem 1rem}
-#settings legend{font-family:var(--caps);font-size:.95rem;letter-spacing:.06em;padding:0 .4rem}
-#settings fieldset .check{margin-bottom:.1rem}
+#settings .check{margin-bottom:.1rem}
 #settings #lim{margin-top:.3rem;width:9rem}
 #cardOpts p{margin:0 0 .6rem}
 .cardbtns{display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.6rem}
@@ -119,7 +117,7 @@ body.latest header,body.latest footer{display:none}
 .cardbtns .btn[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
 #cardParts{display:flex;flex-wrap:wrap;gap:0 1.2rem;margin:.1rem 0 .2rem}
 #cardParts .check{margin:0}
-.cardrow{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;margin-top:.6rem}
+.cardrow{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;margin-top:.45rem}
 .cardrow label{font-style:normal;color:var(--sepia);margin:0;white-space:nowrap}
 #settings #cardPeriod,#settings #cardLimit{width:auto;padding:.25rem .4rem;font:inherit;border:1px solid var(--sepia);background:#f6efdc;color:var(--ink)}
 #settings #cardLimit{width:4.5rem}
@@ -128,7 +126,7 @@ body.latest header,body.latest footer{display:none}
 #copyUrl{margin:0;white-space:nowrap}
 /* the preview is laid out as a card of 500x300 and scaled down to fit the box,
    so what is shown has the shape and the text size a real card would have */
-#previewBox{--s:.6;position:relative;overflow:hidden;width:100%;margin-top:.8rem;
+#previewBox{--s:.5;position:relative;overflow:hidden;width:100%;margin:.7rem auto 0;
   border:1px solid var(--rule);background:var(--paper)}
 #cardPreview{position:absolute;top:0;left:0;width:500px;height:300px;border:0;display:block;
   transform:scale(var(--s));transform-origin:top left}
@@ -182,18 +180,21 @@ dd.big{color:var(--madder);font-size:1.3rem;line-height:1.2}
 #alts button{width:4.4rem;height:5.6rem;border:1px solid var(--rule);background:var(--paper-deep);padding:2px}
 #alts button[aria-pressed="true"]{border-color:var(--madder);box-shadow:0 0 0 1px var(--madder)}
 #alts img{width:100%;height:100%;object-fit:contain;display:block}
-#settings{width:min(84rem,94vw);max-width:94vw}
-#settings .cols{display:grid;grid-template-columns:1fr;gap:0 1.8rem;align-items:start}
-@media (min-width:880px){#settings .cols{grid-template-columns:1fr 1fr}}
-@media (min-width:1240px){#settings .cols{grid-template-columns:1fr 1.05fr .8fr}}
-#settings .cols>div>:first-child{margin-top:0}
-#settings fieldset:first-child{margin-top:0}
-#settings h4{font-family:var(--caps);font-weight:400;font-size:1.05rem;letter-spacing:.06em;margin:1.6rem 0 .3rem;padding-top:1rem;border-top:1px solid var(--rule)}
+#settings{width:min(34rem,94vw);max-width:94vw;padding:1.2rem;max-height:94vh}
+#settings details{border:1px solid var(--rule);margin:0 0 .6rem;padding:0 .9rem}
+#settings details[open]{padding-bottom:.9rem}
+#settings summary{font-family:var(--caps);font-size:1rem;letter-spacing:.06em;padding:.5rem 0;
+  cursor:pointer;list-style:none;display:flex;align-items:baseline;gap:.55rem}
+#settings summary::-webkit-details-marker{display:none}
+#settings summary::before{content:"+";color:var(--madder);font-family:var(--serif);width:.7rem}
+#settings details[open] summary::before{content:"\2013"}
+#settings summary:hover{color:var(--madder)}
+#settings details>:nth-child(2){margin-top:.2rem}
 #settings .credits{margin:0;font-size:.85rem;line-height:1.45}
-#settings h3{font-weight:400;font-size:1.6rem;margin:0 0 .8rem}
+#settings h3{font-weight:400;font-size:1.4rem;margin:0 0 .6rem}
 #settings label{display:block;font-style:italic;color:var(--sepia);margin-bottom:.25rem}
 #settings input{font:inherit;width:100%;padding:.4rem .6rem;border:1px solid var(--sepia);background:#f6efdc;color:var(--ink)}
-#settings p{font-size:.92rem;color:var(--sepia);margin:.5rem 0 1.1rem}
+#settings p{font-size:.9rem;color:var(--sepia);margin:.4rem 0 .8rem}
 .btn{border:1px solid var(--ink);padding:.35rem 1.1rem;margin-right:.6rem}
 .btn:hover{background:var(--ink);color:var(--paper)}
 
@@ -285,28 +286,37 @@ dd.big{color:var(--madder);font-size:1.3rem;line-height:1.2}
   <button class="close" data-close>Close</button>
   <h3>Station settings</h3>
   <form method="dialog" id="setForm">
-   <div class="cols">
-    <div>
-    <fieldset id="stationOpts">
-      <legend>Station</legend>
-    <label for="srv">Address of BirdNET-Go</label>
-    <input id="srv" type="text" inputmode="url" placeholder="http://192.168.1.50:8080" autocomplete="off">
-    <p>Leave empty to use the address given to the container as <code>BIRDNET_URL</code>.</p>
-    <label for="stn">Or a BirdWeather station</label>
-    <input id="stn" type="text" inputmode="numeric" placeholder="12345" autocomplete="off">
-    <p>The number at the end of a public station's page, <i>app.birdweather.com/stations/12345</i>. When filled in, the plate is drawn from that station instead of BirdNET-Go. Leave empty to use what the container was given as <code>BIRDWEATHER_STATION</code>, if anything.</p>
-    <div class="cardrow">
-      <button class="btn" value="save">Save and reload</button>
-      <button class="btn" value="sample" type="button" id="showSample">Show the sample plate</button>
-    </div>
-    </fieldset>
+    <details id="stationOpts" open>
+      <summary>Station</summary>
+      <label for="srv">Address of BirdNET-Go</label>
+      <input id="srv" type="text" inputmode="url" placeholder="http://192.168.1.50:8080" autocomplete="off">
+      <p>Leave empty to use the address given to the container as <code>BIRDNET_URL</code>.</p>
+      <label for="stn">Or a BirdWeather station</label>
+      <input id="stn" type="text" inputmode="numeric" placeholder="12345" autocomplete="off">
+      <p>The number at the end of a public station's page, <i>app.birdweather.com/stations/12345</i>. Filled in, the plate comes from there instead. Empty uses <code>BIRDWEATHER_STATION</code>.</p>
+      <div class="cardrow">
+        <button class="btn" value="save">Save and reload</button>
+        <button class="btn" value="sample" type="button" id="showSample">Show the sample plate</button>
+      </div>
+    </details>
 
-    </div>
+    <details id="showOpts">
+      <summary>Show</summary>
+      <label class="check"><input type="checkbox" id="fitOpt"> Fit everything on one screen</label>
+      <label class="check"><input type="checkbox" data-opt="title"> Title</label>
+      <label class="check"><input type="checkbox" data-opt="date"> Date</label>
+      <label class="check"><input type="checkbox" data-opt="totals"> Species and call totals</label>
+      <label class="check"><input type="checkbox" data-opt="number"> Plate number</label>
+      <label class="check"><input type="checkbox" data-opt="periods"> Today / seven days / thirty days / all</label>
+      <label class="check"><input type="checkbox" data-opt="plate"> The collage of birds</label>
+      <label class="check"><input type="checkbox" data-opt="index"> Index of species</label>
+      <label for="lim">Limit species</label>
+      <input id="lim" type="number" min="0" step="1" placeholder="all of them">
+    </details>
 
-    <div>
-    <fieldset id="cardOpts">
-      <legend>Home Assistant card</legend>
-      <p>Build one card at a time, then copy its address into a <b>Webpage</b> card. Several cards can show different things from this one station.</p>
+    <details id="cardOpts">
+      <summary>Home Assistant card</summary>
+      <p>Build one card, copy its address into a <b>Webpage</b> card, repeat for the next.</p>
       <div class="cardbtns" id="viewPick"></div>
       <div id="cardParts"></div>
       <div class="cardrow" id="periodRow">
@@ -326,30 +336,12 @@ dd.big{color:var(--madder);font-size:1.3rem;line-height:1.2}
         <button class="btn" type="button" id="copyUrl">Copy</button>
       </div>
       <div id="previewBox"><iframe id="cardPreview" title="Preview of this card"></iframe></div>
-    </fieldset>
-    </div>
+    </details>
 
-    <div>
-    <fieldset id="showOpts">
-      <legend>Show</legend>
-      <label class="check"><input type="checkbox" id="fitOpt"> Fit everything on one screen</label>
-      <label class="check"><input type="checkbox" data-opt="title"> Title</label>
-      <label class="check"><input type="checkbox" data-opt="date"> Date</label>
-      <label class="check"><input type="checkbox" data-opt="totals"> Species and call totals</label>
-      <label class="check"><input type="checkbox" data-opt="number"> Plate number</label>
-      <label class="check"><input type="checkbox" data-opt="periods"> Today / seven days / thirty days / all</label>
-      <label class="check"><input type="checkbox" data-opt="plate"> The collage of birds</label>
-      <label class="check"><input type="checkbox" data-opt="index"> Index of species</label>
-      <label for="lim">Limit species</label>
-      <input id="lim" type="number" min="0" step="1" placeholder="all of them">
-    </fieldset>
-
-    <fieldset id="creditsBox">
-      <legend>Credits</legend>
+    <details id="creditsBox">
+      <summary>Credits</summary>
       <p class="credits">Birdsong v0.42. Created by <a href="https://ed-stone.co.uk" target="_blank" rel="noopener">Ed Stone</a>. Detections by <span id="srcName">BirdNET-Go</span>. Bird cut-outs from the <a href="https://github.com/arnegiacomo/fugleramme">Fugleramme</a> project by Arne Giacomo, after Gould, the von Wright brothers, Audubon and others, used under CC BY-SA 4.0. Descriptions from Wikipedia, CC BY-SA. Further plates from <i>Nederlandsche Vogelen</i> (Nozeman &amp; Sepp, Amsterdam, 1770–1829), digitised by the Koninklijke Bibliotheek, with others from public-domain works held on Wikimedia Commons.</p>
-    </fieldset>
-    </div>
-   </div>
+    </details>
   </form>
 </dialog>
 
@@ -1251,10 +1243,15 @@ function cardBuild() {
   }));
   cardShow();
 }
+// the preview takes whatever height is left over, so the panel fits the screen
 function sizePreview() {
   const box = $("#previewBox"), W = 500, H = 300;
-  const s = Math.max(.25, Math.min(1, (box.clientWidth || W) / W));
+  box.style.width = ""; box.style.height = "0px";
+  const room = innerHeight * .94 - settings.scrollHeight - 14;
+  let s = Math.min(.5, (box.clientWidth || W) / W);
+  if (room < H * s) s = Math.max(.32, room / H);
   box.style.setProperty("--s", s);
+  box.style.width = Math.round(W * s) + "px";
   box.style.height = Math.round(H * s) + "px";
 }
 addEventListener("resize", () => { if (settings.open) sizePreview(); });
@@ -1264,7 +1261,7 @@ function cardShow() {
   const href = cardAddress();
   $("#cardUrl").value = href;
   clearTimeout(previewTimer);
-  previewTimer = setTimeout(() => { if (settings.open) $("#cardPreview").src = href; }, 600);
+  previewTimer = setTimeout(() => { if (settings.open && $("#cardOpts").open) $("#cardPreview").src = href; }, 600);
 }
 $("#viewPick").replaceChildren(...CARD_VIEWS.map(([v, name]) => {
   const b = document.createElement("button");
@@ -1279,6 +1276,12 @@ $("#copyUrl").addEventListener("click", async () => {
   try { await navigator.clipboard.writeText(f.value); $("#copyUrl").textContent = "Copied"; setTimeout(() => $("#copyUrl").textContent = "Copy", 1200); } catch (e) {}
 });
 settings.addEventListener("close", () => { $("#cardPreview").removeAttribute("src"); });
+const sections = [...document.querySelectorAll("#setForm details")];
+sections.forEach(d => d.addEventListener("toggle", () => {
+  if (!d.open) return;
+  for (const other of sections) if (other !== d) other.open = false;
+  if (d === $("#cardOpts")) cardShow();
+}));
 $("#openSettings").addEventListener("click", openSettings);
 $("#setForm").addEventListener("submit", () => {
   const v = $("#srv").value.trim().replace(/\/+$/, "");
