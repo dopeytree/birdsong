@@ -72,7 +72,7 @@ nav button:hover{color:var(--ink)}
 section{padding:2.2rem clamp(1rem,4vw,3rem) 2.5rem;max-width:78rem;margin:0 auto}
 h2{font-family:var(--caps);font-weight:400;font-size:1.25rem;letter-spacing:.06em;text-align:center;margin:0 0 1rem}
 h2::before,h2::after{content:"";display:inline-block;width:3.5rem;height:1px;background:var(--rule);vertical-align:middle;margin:0 .9rem}
-#index{columns:16rem;column-gap:2.6rem;list-style:none;margin:0;padding:0}
+#index{columns:16rem;column-gap:2.6rem;list-style:none;margin:0 auto;padding:0}
 #index li{break-inside:avoid}
 #index button{display:flex;align-items:baseline;width:100%;text-align:left;padding:.08rem 0;gap:.4rem}
 #index button::after{content:"";order:1;flex:1;border-bottom:1px dotted var(--rule);transform:translateY(-.25em)}
@@ -472,6 +472,7 @@ function applyOptions() {
   document.body.classList.toggle("latest", !!SINGLE[view]);
   document.body.classList.toggle("card", !!view);   // a page being used as a card keeps no way into settings
   $("#latest").hidden = !SINGLE[view];
+  sizeIndex();   // one-screen mode uses narrower columns
 }
 const listed = () => opt.limit ? species.slice(0, opt.limit) : species;
 const ts = v => { const d = new Date(String(v || "").replace(" ", "T")); return isNaN(d) ? 0 : d.getTime(); };
@@ -811,7 +812,6 @@ let species = [], firstReveal = true;
 /* In one-screen mode, give the plate whatever height is left once everything else is measured. */
 let fit = store.get("fit", true);
 function fitPlate() {
-  document.body.classList.toggle("fit", fit);
   if (!fit) { plateEl.style.height = ""; return; }
   plateEl.style.height = Math.max(140, innerHeight - measureOthers()) + "px";
 }
@@ -823,6 +823,10 @@ function measureOthers() {
 }
 
 function layout() {
+  // one-screen mode narrows the index's columns, so its width is settled here,
+  // where the class is, and not where the list is built
+  document.body.classList.toggle("fit", fit);
+  sizeIndex();
   if (!opt.plate) { plateEl.style.height = ""; return; }
   fitPlate();
   const CW = plateEl.clientWidth, CH = plateEl.clientHeight;
@@ -914,6 +918,29 @@ function renderIndex() {
     b.innerHTML = '<span class="c">' + esc(sp.common) + (f && f.blank ? ' <span class="x">(no plate)</span>' : "") + '</span><span class="n">' + sp.count.toLocaleString() + "</span>";
     b.title = sp.sci; b.addEventListener("click", () => openDetail(sp)); li.append(b); return li;
   }));
+  sizeIndex();
+}
+
+// a handful of species would otherwise sit in the first few columns of a wide
+// page, so the list is given room for no more columns than it has entries and
+// centred in what is left
+function sizeIndex() {
+  const el = $("#index"), n = el.children.length;
+  el.style.maxWidth = "";
+  if (!n) return;
+  const cs = getComputedStyle(el);
+  const colW = parseFloat(cs.columnWidth), gap = parseFloat(cs.columnGap) || 0;
+  if (!colW) return;
+  // the browser gives every column the same height, so a list of seven over
+  // six possible columns becomes four columns of two and two empty ones.
+  // Work out how many columns really get used, and be only that wide.
+  // measured on the parent: the list is still carrying the width it was last
+  // given, which would make the room available look like whatever it was then
+  const box = el.parentElement, bcs = getComputedStyle(box);
+  const avail = box.clientWidth - parseFloat(bcs.paddingLeft) - parseFloat(bcs.paddingRight);
+  const room = Math.max(1, Math.floor((avail + gap) / (colW + gap)));
+  const used = Math.ceil(n / Math.ceil(n / room));
+  el.style.maxWidth = (used * colW + (used - 1) * gap) + "px";
 }
 
 let busy = false, lastSig = "";
