@@ -812,7 +812,6 @@ let species = [], firstReveal = true;
 /* In one-screen mode, give the plate whatever height is left once everything else is measured. */
 let fit = store.get("fit", true);
 function fitPlate() {
-  document.body.classList.toggle("fit", fit);
   if (!fit) { plateEl.style.height = ""; return; }
   plateEl.style.height = Math.max(140, innerHeight - measureOthers()) + "px";
 }
@@ -824,6 +823,10 @@ function measureOthers() {
 }
 
 function layout() {
+  // one-screen mode narrows the index's columns, so its width is settled here,
+  // where the class is, and not where the list is built
+  document.body.classList.toggle("fit", fit);
+  sizeIndex();
   if (!opt.plate) { plateEl.style.height = ""; return; }
   fitPlate();
   const CW = plateEl.clientWidth, CH = plateEl.clientHeight;
@@ -922,9 +925,18 @@ function renderIndex() {
 // page, so the list is given room for no more columns than it has entries and
 // centred in what is left
 function sizeIndex() {
-  const el = $("#index"), n = el.children.length, cs = getComputedStyle(el);
+  const el = $("#index"), n = el.children.length;
+  el.style.maxWidth = "";
+  if (!n) return;
+  const cs = getComputedStyle(el);
   const colW = parseFloat(cs.columnWidth), gap = parseFloat(cs.columnGap) || 0;
-  el.style.maxWidth = n && colW ? (n * colW + (n - 1) * gap) + "px" : "";
+  if (!colW) return;
+  // the browser gives every column the same height, so a list of seven over
+  // six possible columns becomes four columns of two and two empty ones.
+  // Work out how many columns really get used, and be only that wide.
+  const room = Math.max(1, Math.floor((el.clientWidth + gap) / (colW + gap)));
+  const used = Math.ceil(n / Math.ceil(n / room));
+  el.style.maxWidth = (used * colW + (used - 1) * gap) + "px";
 }
 
 let busy = false, lastSig = "";
