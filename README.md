@@ -97,14 +97,46 @@ the call, with a second either side) all work. Some things differ:
 
 ## Home Assistant
 
-To put Birdsong on a Home Assistant dashboard, add a new view and give it
-the **Grid** layout, then add a single **Webpage** (iframe) card with your
-Birdsong address, for example `http://192.168.1.50:8095`. One-screen mode
-(on by default) suits the card well.
+Add a view to a dashboard, give it the **Grid** layout, then add **Webpage**
+cards pointing at Birdsong. Each card can show a different part of the page,
+so the collage, the index and the latest bird can sit side by side:
 
-If you open Home Assistant over HTTPS, the browser will refuse to embed a
-plain-HTTP page inside it: serve Birdsong through your reverse proxy with
-HTTPS and use that address in the card instead.
+| Card | Address |
+|---|---|
+| Everything | `http://192.168.1.50:8095/` |
+| Collage only | `http://192.168.1.50:8095/?view=plate` |
+| Index only | `http://192.168.1.50:8095/?view=index` |
+| Latest bird | `http://192.168.1.50:8095/?view=latest` |
+
+Station settings builds these for you: set what you want shown, then use the
+buttons under **Address for a Home Assistant card** to copy one.
+
+Anything can be switched off per card by adding `hide=`, and the number of
+species capped with `limit=`:
+
+    ?view=plate&hide=title,date,totals,number,periods&limit=24
+
+| Name | What it hides |
+|---|---|
+| `title` | the word Birdsong |
+| `date` | the date line |
+| `totals` | the species and call totals |
+| `number` | the plate number |
+| `periods` | today / seven days / thirty days / all |
+| `plate` | the collage of birds |
+| `index` | the index of species |
+
+`show=` turns a part back on in the same way, and `limit=20` keeps the card
+to the twenty most-heard species — worth setting on an index card, which
+otherwise scrolls. A card address never shows the settings link, so set
+things up on the main page first.
+
+Without `view=` or `hide=`, a card follows whatever Station settings has for
+this browser.
+
+If Home Assistant is opened over HTTPS, the browser will refuse to embed a
+plain-HTTP page inside it: serve Birdsong over HTTPS (see below) and use
+that address in the card instead.
 
 ## HTTPS with Tailscale
 

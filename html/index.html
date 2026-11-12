@@ -80,6 +80,42 @@ h2::before,h2::after{content:"";display:inline-block;width:3.5rem;height:1px;bac
 #index button:hover .c{text-decoration:underline;text-decoration-color:var(--rule);text-underline-offset:3px}
 #index .x{font-style:italic;color:var(--sepia);font-size:.85rem}
 
+/* ---------- what each card shows: parts switched off in settings or by the URL ---------- */
+#sub span{display:block}
+body.no-title h1{display:none}
+body.no-date #subDate{display:none}
+body.no-totals #subTotals{display:none}
+body.no-periods nav{display:none}
+body.no-number #pl{display:none}
+body.card #openSettings{display:none}
+body.no-number.card #plateno{display:none}
+body.no-plate main>section{padding-top:.8rem}
+body.no-plate #plate,body.no-plate #caption{display:none}
+body.no-index main>section{display:none}
+body.no-title.no-date.no-totals.no-periods header{padding-top:.6rem}
+
+/* a single bird, for a small card of its own */
+#latest{display:none;flex-direction:column;align-items:center;justify-content:center;gap:.4rem;
+  height:100vh;padding:1rem;text-align:center}
+body.latest #latest{display:flex}
+body.latest main>section,body.latest #plate,body.latest #caption,body.latest #plateno{display:none}
+body.latest header,body.latest footer{display:none}
+#latestFig{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;width:100%}
+#latestFig>*{max-height:100%;max-width:100%;width:auto;height:auto;object-fit:contain;filter:url(#paperTint)}
+#latestName{font-family:var(--serif);font-weight:400;font-size:clamp(1.3rem,3.4vw,2.1rem);margin:0;letter-spacing:0}
+#latestName::before,#latestName::after{content:none}
+#latestSci{font-style:italic;color:var(--sepia);margin:.1rem 0 0}
+#latestWhen{color:var(--madder);margin:.15rem 0 0}
+
+#settings fieldset{border:1px solid var(--rule);margin:1.2rem 0 0;padding:.7rem .9rem 1rem}
+#settings legend{font-family:var(--caps);font-size:.95rem;letter-spacing:.06em;padding:0 .4rem}
+#settings fieldset .check{margin-bottom:.1rem}
+#settings #lim{margin-top:.3rem;width:9rem}
+#cardOpts p{margin:0 0 .6rem}
+.cardbtns{display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.6rem}
+.cardbtns .btn{margin:0;font-size:.9rem;padding:.25rem .7rem}
+#cardUrl{font-size:.85rem}
+
 /* ---------- one-screen mode: the plate shrinks so the index fits beneath it without scrolling ---------- */
 body.fit #plate{min-height:0;aspect-ratio:auto}
 body.fit #caption{display:none}
@@ -151,7 +187,7 @@ dd.big{color:var(--madder);font-size:1.3rem;line-height:1.2}
 <header>
   <div>
     <h1>Birdsong</h1>
-    <p id="sub">Listening…</p>
+    <p id="sub"><span id="subDate">Listening…</span><span id="subTotals"></span></p>
   </div>
   <div id="plateno"><span id="pl"></span><button id="openSettings">Station settings</button></div>
   <nav aria-label="Period">
@@ -164,6 +200,14 @@ dd.big{color:var(--madder);font-size:1.3rem;line-height:1.2}
 </header>
 
 <main>
+  <div id="latest" hidden>
+    <div id="latestFig"></div>
+    <div id="latestText">
+      <h2 id="latestName"></h2>
+      <p id="latestSci"></p>
+      <p id="latestWhen"></p>
+    </div>
+  </div>
   <div id="plate"><div id="status">Preparing the plate…</div></div>
   <p id="caption">Each bird is drawn in proportion to how often it was heard. Select one to see its plate and its hours.</p>
   <section>
@@ -222,6 +266,31 @@ dd.big{color:var(--madder);font-size:1.3rem;line-height:1.2}
     <p>The number at the end of a public station's page, <i>app.birdweather.com/stations/12345</i>. When filled in, the plate is drawn from that station instead of BirdNET-Go. Leave empty to use what the container was given as <code>BIRDWEATHER_STATION</code>, if anything.</p>
     <label class="check"><input type="checkbox" id="fitOpt"> Fit everything on one screen</label>
     <p>Shrinks the collage so the index of species sits beneath it with no scrolling.</p>
+
+    <fieldset id="showOpts">
+      <legend>Show</legend>
+      <label class="check"><input type="checkbox" data-opt="title"> Title</label>
+      <label class="check"><input type="checkbox" data-opt="date"> Date</label>
+      <label class="check"><input type="checkbox" data-opt="totals"> Species and call totals</label>
+      <label class="check"><input type="checkbox" data-opt="number"> Plate number</label>
+      <label class="check"><input type="checkbox" data-opt="periods"> Today / seven days / thirty days / all</label>
+      <label class="check"><input type="checkbox" data-opt="plate"> The collage of birds</label>
+      <label class="check"><input type="checkbox" data-opt="index"> Index of species</label>
+      <label for="lim">Most species shown</label>
+      <input id="lim" type="number" min="0" step="1" placeholder="all of them">
+    </fieldset>
+
+    <fieldset id="cardOpts">
+      <legend>Address for a Home Assistant card</legend>
+      <p>Put one of these in a <b>Webpage</b> card. Each carries its own settings, so several cards can show different things.</p>
+      <div class="cardbtns">
+        <button class="btn" type="button" data-card="">Everything</button>
+        <button class="btn" type="button" data-card="plate">Collage only</button>
+        <button class="btn" type="button" data-card="index">Index only</button>
+        <button class="btn" type="button" data-card="latest">Latest bird</button>
+      </div>
+      <input id="cardUrl" type="text" readonly placeholder="Choose one above">
+    </fieldset>
     <button class="btn" value="save">Save and reload</button>
     <button class="btn" value="sample" type="button" id="showSample">Show the sample plate</button>
   </form>
@@ -331,6 +400,30 @@ const store = {
 const params = new URLSearchParams(location.search);
 const server = (params.get("server") || store.get("server", "") || CONFIG.server).replace(/\/+$/, "");
 let demo = params.has("demo");
+
+/* What this page shows. The settings panel sets the defaults for this browser;
+   a URL sets them for one page, so several Home Assistant cards can show
+   different things from the same station:
+     ?view=plate | index | latest     ?hide=title,date,totals,periods,index     ?limit=20   */
+const PARTS = ["title", "date", "totals", "number", "periods", "plate", "index"];
+const view = (params.get("view") || "").toLowerCase();
+const opt = {};
+for (const p of PARTS) opt[p] = store.get("show." + p, true);
+opt.limit = Math.max(0, Number(params.get("limit")) || store.get("limit", 0));
+if (view === "plate") opt.index = false;
+if (view === "index") opt.plate = false;
+if (view === "latest") for (const p of PARTS) opt[p] = false;
+for (const [key, on] of [["hide", false], ["show", true]])
+  for (const p of (params.get(key) || "").split(",")) if (PARTS.includes(p.trim())) opt[p.trim()] = on;
+
+function applyOptions() {
+  for (const p of PARTS) document.body.classList.toggle("no-" + p, !opt[p]);
+  document.body.classList.toggle("latest", view === "latest");
+  document.body.classList.toggle("card", !!view);   // a page being used as a card keeps no way into settings
+  $("#latest").hidden = view !== "latest";
+}
+const listed = () => opt.limit ? species.slice(0, opt.limit) : species;
+const ts = v => { const d = new Date(String(v || "").replace(" ", "T")); return isNaN(d) ? 0 : d.getTime(); };
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const ymd = d => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
 const daysAgo = n => { const d = new Date(); d.setDate(d.getDate() - n); return d; };
@@ -653,9 +746,10 @@ function measureOthers() {
 }
 
 function layout() {
+  if (!opt.plate) { plateEl.style.height = ""; return; }
   fitPlate();
   const CW = plateEl.clientWidth, CH = plateEl.clientHeight;
-  const shown = species.slice(0, CONFIG.maxOnPlate).filter(s => figures.has(s.sci));
+  const shown = listed().slice(0, CONFIG.maxOnPlate).filter(s => figures.has(s.sci));
   if (!shown.length || !CW || !CH) return;
   const max = shown[0].count, ar = CW / CH;
   const items = shown.map(s => {
@@ -729,7 +823,8 @@ async function pool(list, n, fn) {
 function renderHeading() {
   const now = new Date(), total = species.reduce((a, s) => a + s.count, 0);
   const span = { today: longDate(now), week: "The seven days to " + longDate(now), month: "The thirty days to " + longDate(now), all: "Every day on record, to " + longDate(now) }[period];
-  $("#sub").innerHTML = esc(span) + "." + (species.length ? "<br>" + species.length + " species from " + calls(total) + "." : "");
+  $("#subDate").textContent = span + ".";
+  $("#subTotals").textContent = species.length ? species.length + " species from " + calls(total) + "." : "";
   const doy = Math.floor((now - new Date(now.getFullYear(), 0, 0)) / 864e5);
   $("#pl").textContent = "Plate " + roman(doy);
   $("#pl").title = "Day " + doy + " of " + now.getFullYear();
@@ -737,7 +832,7 @@ function renderHeading() {
 }
 
 function renderIndex() {
-  $("#index").replaceChildren(...species.map(sp => {
+  $("#index").replaceChildren(...listed().map(sp => {
     const li = document.createElement("li"), b = document.createElement("button"), f = figures.get(sp.sci);
     b.innerHTML = '<span class="c">' + esc(sp.common) + (f && f.blank ? ' <span class="x">(no plate)</span>' : "") + '</span><span class="n">' + sp.count.toLocaleString() + "</span>";
     b.title = sp.sci; b.addEventListener("click", () => openDetail(sp)); li.append(b); return li;
@@ -770,12 +865,12 @@ async function refresh(initial) {
       const wk = $("#wk"); if (wk) wk.addEventListener("click", () => setPeriod("week"));
       renderIndex(); busy = false; return;
     }
-    const top = rows.slice(0, CONFIG.maxOnPlate), missing = top.filter(s => !figures.has(s.sci));
+    const top = opt.plate ? listed().slice(0, CONFIG.maxOnPlate) : [], missing = top.filter(s => !figures.has(s.sci));
     let done = 0;
     if (missing.length > 3) statusEl.textContent = "Preparing the plate…";
     await pool(top, 6, async sp => { await ensureFigure(sp); if (missing.length > 3 && !figures.get(sp.sci).button.isConnected) statusEl.textContent = "Preparing the plate… " + (++done) + " of " + missing.length; });
     statusEl.textContent = "";
-    renderIndex(); layout();
+    renderIndex(); layout(); renderLatest();
   } finally { busy = false; }
 }
 
@@ -785,6 +880,22 @@ function setPeriod(p) {
   renderHeading(); refresh(true);
 }
 document.querySelectorAll("nav button").forEach(b => b.addEventListener("click", () => setPeriod(b.dataset.p)));
+
+/* ---------- the latest bird, for a card of its own ---------- */
+let latestOf = "";
+async function renderLatest() {
+  if (view !== "latest") return;
+  const list = listed();
+  if (!list.length) { latestOf = ""; $("#latestName").textContent = "Nothing heard yet."; return; }
+  const sp = list.reduce((a, b) => ts(b.last) > ts(a.last) ? b : a, list[0]);
+  $("#latestName").textContent = sp.common;
+  $("#latestSci").textContent = sp.sci;
+  $("#latestWhen").textContent = sp.last ? "Heard " + when(sp.last) : calls(sp.count);
+  if (latestOf === sp.sci) return;              // same bird: leave the picture alone
+  latestOf = sp.sci;
+  const fig = await makeFigure(sp, await choosePlates(sp));
+  if (latestOf === sp.sci) $("#latestFig").replaceChildren(fig.el);
+}
 
 /* ---------- detail card ---------- */
 const detail = $("#detail");
@@ -1009,8 +1120,37 @@ detail.addEventListener("close", stopAudio);
 
 /* ---------- settings ---------- */
 const settings = $("#settings");
-function openSettings() { $("#srv").value = store.get("server", "") || CONFIG.server; $("#stn").value = store.get("station", ""); $("#fitOpt").checked = fit; settings.showModal(); }
+function openSettings() {
+  document.querySelectorAll("#showOpts [data-opt]").forEach(b => b.checked = !!opt[b.dataset.opt]);
+  $("#lim").value = opt.limit || ""; $("#cardUrl").value = "";
+  $("#srv").value = store.get("server", "") || CONFIG.server; $("#stn").value = store.get("station", "");
+  $("#fitOpt").checked = fit; settings.showModal();
+}
 $("#fitOpt").addEventListener("change", e => { fit = e.target.checked; store.set("fit", fit); layout(); });
+document.querySelectorAll("#showOpts [data-opt]").forEach(b => b.addEventListener("change", e => {
+  const p = b.dataset.opt; opt[p] = e.target.checked; store.set("show." + p, opt[p]);
+  applyOptions(); renderHeading(); renderIndex(); refresh(true);
+}));
+$("#lim").addEventListener("change", e => {
+  opt.limit = Math.max(0, Number(e.target.value) || 0); store.set("limit", opt.limit);
+  renderHeading(); renderIndex(); refresh(true);
+});
+function cardURL(v) {
+  const u = new URL(location.pathname, location.href);
+  if (v) u.searchParams.set("view", v);
+  if (demo) u.searchParams.set("demo", "");
+  const off = PARTS.filter(p => !opt[p] && !(v === "plate" && p === "index") && !(v === "index" && p === "plate"));
+  if (v !== "latest" && off.length) u.searchParams.set("hide", off.join(","));
+  if (opt.limit) u.searchParams.set("limit", opt.limit);
+  return decodeURIComponent(u.href);
+}
+document.querySelectorAll("[data-card]").forEach(b => {
+  b.dataset.label = b.textContent;
+  b.addEventListener("click", async () => {
+    const f = $("#cardUrl"); f.value = cardURL(b.dataset.card); f.select();
+    try { await navigator.clipboard.writeText(f.value); b.textContent = "Copied"; setTimeout(() => b.textContent = b.dataset.label, 1200); } catch (e) {}
+  });
+});
 $("#openSettings").addEventListener("click", openSettings);
 $("#setForm").addEventListener("submit", () => {
   const v = $("#srv").value.trim().replace(/\/+$/, "");
@@ -1024,6 +1164,7 @@ document.querySelectorAll("[data-close]").forEach(b => b.addEventListener("click
 document.querySelectorAll("dialog").forEach(d => d.addEventListener("click", e => { if (e.target === d) d.close(); }));
 
 let rz; addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(layout, 150); });
+applyOptions();
 renderHeading();
 Promise.all([loadFugleramme(), loadSource()]).then(() => refresh(true));
 setInterval(() => { if (!document.hidden && !demo) refresh(false); }, CONFIG.refreshSeconds * 1000);

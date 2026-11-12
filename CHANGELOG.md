@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- Station settings can now switch off the title, date, totals, plate number,
+  period buttons, the collage and the index, and cap how many species are
+  shown.
+- The same settings can be put in the address, so one station can feed
+  several Home Assistant cards: `?view=plate`, `?view=index`,
+  `?view=latest`, with `hide=`, `show=` and `limit=`.
+- New single-bird view for a small card: the most recently heard bird, its
+  name and when it was heard.
+
 - Fixed: a bird's description was shown the first time its card was opened
   and never again. The description was written into the card before the card
   was shown, which only worked while the text was still being fetched; once
