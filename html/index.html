@@ -476,6 +476,14 @@ function applyOptions() {
 }
 const listed = () => opt.limit ? species.slice(0, opt.limit) : species;
 const ts = v => { const d = new Date(String(v || "").replace(" ", "T")); return isNaN(d) ? 0 : d.getTime(); };
+// A day's own figures carry the clock alone, "20:56:36", where a longer period
+// carries the whole stamp. A bare clock will not parse, so the day goes back on
+// it; without this every time reads as nothing and the latest bird is whichever
+// one called most.
+const withDay = (v, day) => {
+  const m = /^(\d{1,2}):(\d{2})(:\d{2})?$/.exec(String(v || "").trim());
+  return m ? day + "T" + m[1].padStart(2, "0") + ":" + m[2] + (m[3] || ":00") : (v || "");
+};
 // just the clock, no seconds; the day as well when it was not today
 function clockTime(v) {
   const d = new Date(String(v || "").replace(" ", "T"));
@@ -529,9 +537,10 @@ async function fetchSpecies() {
   if (demo) return sample();
   if (SOURCE.bw) return fetchSpeciesBW();
   let path;
-  if (period === "today") path = "/api/v2/analytics/species/daily?date=" + ymd(new Date());
+  const day = ymd(new Date());
+  if (period === "today") path = "/api/v2/analytics/species/daily?date=" + day;
   else if (period === "all") path = "/api/v2/analytics/species/summary";
-  else path = "/api/v2/analytics/species/summary?start_date=" + ymd(daysAgo(period === "week" ? 6 : 29)) + "&end_date=" + ymd(new Date());
+  else path = "/api/v2/analytics/species/summary?start_date=" + ymd(daysAgo(period === "week" ? 6 : 29)) + "&end_date=" + day;
   const r = await fetch(server + path, { headers: { Accept: "application/json" } });
   if (r.status === 401 || r.status === 403) throw new Error("BirdNET-Go asked for a sign-in. Allow this page's address under its security settings, or turn off private mode.");
   if (!r.ok) throw new Error("BirdNET-Go answered with error " + r.status + ".");
@@ -541,8 +550,8 @@ async function fetchSpecies() {
     sci: o.scientific_name || o.scientificName || "",
     common: o.common_name || o.commonName || o.scientific_name || "Unnamed",
     count: Number(o.count ?? o.total ?? o.count_in_period ?? 0),
-    first: o.first_heard || o.first_seen || o.first_heard_date || "",
-    last: o.last_heard || o.latest_heard || o.last_seen || o.latest_seen || "",
+    first: withDay(o.first_heard || o.first_seen || o.first_heard_date, day),
+    last: withDay(o.last_heard || o.latest_heard || o.last_seen || o.latest_seen, day),
     hourly: Array.isArray(o.hourly_counts) && o.hourly_counts.length === 24 ? o.hourly_counts : null,
     maxConf: o.max_confidence || 0, avgConf: o.avg_confidence || 0,
     isNew: !!o.is_new_species, newYear: !!o.is_new_this_year, newSeason: !!o.is_new_this_season,
