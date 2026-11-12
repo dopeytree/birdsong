@@ -145,10 +145,11 @@ body.fit #index{columns:11rem;column-gap:1.6rem;font-size:.84rem;line-height:1.3
 
 /* ---------- dialogs ---------- */
 dialog{font:inherit;color:var(--ink);background:var(--paper);border:1px solid var(--sepia);outline:1px solid var(--rule);outline-offset:-7px;padding:1.8rem;max-width:min(60rem,94vw);max-height:92vh;overflow:auto}
-dialog::backdrop{background:rgba(42,36,28,.4)}
-/* the settings panel lets the plate show through, blurred so the type stays readable */
-#settings{background:rgba(238,229,206,.5);-webkit-backdrop-filter:blur(16px) saturate(1.15);backdrop-filter:blur(16px) saturate(1.15)}
-#settings fieldset{background:rgba(238,229,206,.4)}
+dialog::backdrop{background:rgba(42,36,28,.55)}
+/* settings is half transparent, and nothing dims the page behind it, so a
+   change to the plate can be watched while it is made */
+#settings{background:rgba(238,229,206,.5)}
+#settings::backdrop{background:transparent}
 .close{position:absolute;top:.9rem;right:1.1rem;font-style:italic;color:var(--sepia);text-decoration:underline;text-underline-offset:3px;font-size:.95rem}
 #card{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:2rem}
 #card figure{margin:0}
