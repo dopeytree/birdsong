@@ -2,14 +2,14 @@
 
 ## Unreleased
 
-- Station settings can now switch off the title, date, totals, plate number,
+- Settings can now switch off the title, date, totals, plate number,
   period buttons, the collage and the index, and cap how many species are
   shown.
 - The same settings can be put in the address, so one station can feed
   several Home Assistant cards: `?view=plate`, `?view=index` and the
   one-bird views, each showing only its own subject, with `hide=`, `show=`,
   `period=` and `limit=` to adjust them.
-- Station settings can build a card's address for you, with a live preview
+- Settings can build a card's address for you, with a live preview
   shaped like a real card. The panel is one narrow column of four sections --
   station, show, card and credits -- of which one is open at a time, so it
   sits on the screen without scrolling, and it is part transparent so a
@@ -20,6 +20,8 @@
   *30 calls over seven days*; the latest bird can show the time it called,
   which is off unless asked for.
 
+- "Station settings" on the page is now simply "Settings"; it holds more
+  than the station.
 - Fixed: a bird's description was shown the first time its card was opened
   and never again. The description was written into the card before the card
   was shown, which only worked while the text was still being fetched; once
@@ -27,7 +29,7 @@
 
 - New: draw the plate from a public BirdWeather station, such as a PUC,
   instead of BirdNET-Go. Set `BIRDWEATHER_STATION` to the station's
-  number, or enter it under Station settings. nginx forwards `/graphql`
+  number, or enter it under Settings. nginx forwards `/graphql`
   to BirdWeather's public API only when the setting is present. The card
   shows what BirdWeather offers: calls by hour and by day, first heard (as
   a date) and last heard, days known at the station, and the latest
