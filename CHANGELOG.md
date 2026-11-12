@@ -13,7 +13,9 @@
   shaped like a real card. The panel is wider and laid out in two columns.
 - New single-bird views for a small card: `?view=latest` for the bird heard
   most recently, `?view=top` for the one heard most often, `?view=rare` for
-  the one heard least.
+  the one heard least. Top and rare give the count and the period, as
+  *30 calls over seven days*; the latest bird can show the time it called,
+  which is off unless asked for.
 
 - Fixed: a bird's description was shown the first time its card was opened
   and never again. The description was written into the card before the card

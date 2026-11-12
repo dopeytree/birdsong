@@ -92,7 +92,6 @@ body.no-number.card #plateno{display:none}
 body.no-plate main>section{padding-top:.8rem}
 body.no-name #latestName{display:none}
 body.no-sci #latestSci{display:none}
-body.no-when #latestWhen{display:none}
 body.no-plate #plate,body.no-plate #caption{display:none}
 body.no-index main>section{display:none}
 body.no-title.no-date.no-totals.no-periods header{padding-top:.6rem}
@@ -289,6 +288,10 @@ dd.big{color:var(--madder);font-size:1.3rem;line-height:1.2}
     <label for="stn">Or a BirdWeather station</label>
     <input id="stn" type="text" inputmode="numeric" placeholder="12345" autocomplete="off">
     <p>The number at the end of a public station's page, <i>app.birdweather.com/stations/12345</i>. When filled in, the plate is drawn from that station instead of BirdNET-Go. Leave empty to use what the container was given as <code>BIRDWEATHER_STATION</code>, if anything.</p>
+    <div class="cardrow">
+      <button class="btn" value="save">Save and reload</button>
+      <button class="btn" value="sample" type="button" id="showSample">Show the sample plate</button>
+    </div>
     <label class="check"><input type="checkbox" id="fitOpt"> Fit everything on one screen</label>
     <p>Shrinks the collage so the index of species sits beneath it with no scrolling.</p>
 
@@ -301,13 +304,9 @@ dd.big{color:var(--madder);font-size:1.3rem;line-height:1.2}
       <label class="check"><input type="checkbox" data-opt="periods"> Today / seven days / thirty days / all</label>
       <label class="check"><input type="checkbox" data-opt="plate"> The collage of birds</label>
       <label class="check"><input type="checkbox" data-opt="index"> Index of species</label>
-      <label for="lim">Most species shown</label>
+      <label for="lim">Limit species</label>
       <input id="lim" type="number" min="0" step="1" placeholder="all of them">
     </fieldset>
-    <div class="cardrow">
-      <button class="btn" value="save">Save and reload</button>
-      <button class="btn" value="sample" type="button" id="showSample">Show the sample plate</button>
-    </div>
     </div>
 
     <div>
@@ -316,7 +315,7 @@ dd.big{color:var(--madder);font-size:1.3rem;line-height:1.2}
       <p>Build one card at a time, then copy its address into a <b>Webpage</b> card. Several cards can show different things from this one station.</p>
       <div class="cardbtns" id="viewPick"></div>
       <div id="cardParts"></div>
-      <div class="cardrow">
+      <div class="cardrow" id="periodRow">
         <label for="cardPeriod">Period</label>
         <select id="cardPeriod">
           <option value="">as the page</option>
@@ -325,7 +324,7 @@ dd.big{color:var(--madder);font-size:1.3rem;line-height:1.2}
           <option value="month">Thirty days</option>
           <option value="all">Since records began</option>
         </select>
-        <label for="cardLimit">Most species</label>
+        <label for="cardLimit">Limit species</label>
         <input id="cardLimit" type="number" min="0" step="1" placeholder="all">
       </div>
       <div class="cardrow">
@@ -449,13 +448,15 @@ let demo = params.has("demo");
    different things from the same station:
      ?view=plate | index | latest     ?hide=title,date,totals,periods,index     ?limit=20   */
 const PAGE_PARTS = ["title", "date", "totals", "number", "periods", "plate", "index"];
-const BIRD_PARTS = ["name", "sci", "when"];
+const BIRD_PARTS = ["name", "sci", "time", "count"];   // time belongs to the latest bird, count to top and rare
 const PARTS = [...PAGE_PARTS, ...BIRD_PARTS];
-const SINGLE = { latest: "Latest bird", top: "Most heard", rare: "Least heard" };
+const SINGLE = { latest: "Latest bird", top: "Top", rare: "Rare" };
+const OVER = { today: "today", week: "over seven days", month: "over thirty days", all: "since records began" };
 const view = (params.get("view") || "").toLowerCase();
 const opt = {};
 for (const p of PAGE_PARTS) opt[p] = store.get("show." + p, true);
 for (const p of BIRD_PARTS) opt[p] = true;
+if (view === "latest") opt.time = false;              // the time is off by default: the card is prettier without it
 opt.limit = Math.max(0, Number(params.get("limit")) || store.get("limit", 0));
 // a view shows only its own subject; show= puts any of the rest back
 if (view === "plate" || view === "index" || SINGLE[view]) {
@@ -473,6 +474,13 @@ function applyOptions() {
 }
 const listed = () => opt.limit ? species.slice(0, opt.limit) : species;
 const ts = v => { const d = new Date(String(v || "").replace(" ", "T")); return isNaN(d) ? 0 : d.getTime(); };
+// just the clock, no seconds; the day as well when it was not today
+function clockTime(v) {
+  const d = new Date(String(v || "").replace(" ", "T"));
+  if (isNaN(d)) return String(v || "").replace(/(\d{1,2}:\d{2}):\d{2}/, "$1").trim();
+  const t = d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+  return ymd(d) === ymd(new Date()) ? t : d.toLocaleDateString(undefined, { day: "numeric", month: "short" }) + ", " + t;
+}
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const ymd = d => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
 const daysAgo = n => { const d = new Date(); d.setDate(d.getDate() - n); return d; };
@@ -943,8 +951,9 @@ async function renderLatest() {
     : species.reduce((a, b) => ts(b.last) > ts(a.last) ? b : a, species[0]);
   $("#latestName").textContent = sp.common;
   $("#latestSci").textContent = sp.sci;
-  $("#latestWhen").textContent = view === "latest" ? (sp.last ? "Heard " + when(sp.last) : calls(sp.count))
-    : (view === "top" ? "Most heard: " : "Least heard: ") + calls(sp.count);
+  const line = view === "latest" ? clockTime(sp.last) : calls(sp.count) + " " + (OVER[period] || "");
+  $("#latestWhen").textContent = line;
+  $("#latestWhen").style.display = (view === "latest" ? opt.time && line : opt.count) ? "" : "none";
   if (latestOf === sp.sci) return;              // same bird: leave the picture alone
   latestOf = sp.sci;
   const fig = await makeFigure(sp, await choosePlates(sp));
@@ -1192,14 +1201,14 @@ $("#lim").addEventListener("change", e => {
   renderHeading(); renderIndex(); refresh(true);
 });
 /* ---------- building one Home Assistant card ---------- */
-const CARD_VIEWS = [["", "Everything"], ["plate", "Collage"], ["index", "Index"], ["latest", "Latest bird"], ["top", "Most heard"], ["rare", "Least heard"]];
+const CARD_VIEWS = [["", "Everything"], ["plate", "Collage"], ["index", "Index"], ["latest", "Latest bird"], ["top", "Top"], ["rare", "Rare"]];
 const LABEL = { title: "Title", date: "Date", totals: "Totals", number: "Plate number", periods: "Period buttons",
-  plate: "Collage", index: "Index", name: "Name", sci: "Scientific name", when: "Heard line" };
+  plate: "Collage", index: "Index", name: "Name", sci: "Scientific name", time: "Time", count: "Calls" };
 const card = { view: "", on: {}, period: "", limit: 0 };
-const cardFields = v => SINGLE[v] ? BIRD_PARTS : PAGE_PARTS;
+const cardFields = v => v === "latest" ? ["name", "sci", "time"] : SINGLE[v] ? ["name", "sci", "count"] : PAGE_PARTS;
 function cardDefaults(v) {
   const on = {};
-  if (SINGLE[v]) for (const p of BIRD_PARTS) on[p] = true;
+  if (SINGLE[v]) { for (const p of cardFields(v)) on[p] = true; if (v === "latest") on.time = false; }
   else if (v) on[v] = true;
   else for (const p of PAGE_PARTS) on[p] = true;
   return on;
@@ -1219,6 +1228,8 @@ function cardAddress() {
 let previewTimer;
 function cardBuild() {
   document.querySelectorAll("#viewPick .btn").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.v === card.view)));
+  $("#periodRow").hidden = card.view === "latest";   // the latest bird is its own window of time
+  if (card.view === "latest") { card.period = ""; $("#cardPeriod").value = ""; }
   $("#cardParts").replaceChildren(...cardFields(card.view).map(p => {
     const l = document.createElement("label"), i = document.createElement("input");
     l.className = "check"; i.type = "checkbox"; i.checked = !!card.on[p];

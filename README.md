@@ -120,6 +120,8 @@ subject** — no title, date, totals or buttons unless you ask for them.
 | `/?view=top` | one bird: the one heard most in the period |
 | `/?view=rare` | one bird: the one heard least in the period |
 
+`latest` is its own window of time, so `period=` does not apply to it.
+
 ### Adding and removing parts
 
 `hide=` and `show=` take a comma-separated list. Which names apply depends
@@ -136,7 +138,8 @@ on the view:
 | `index` | the index of species | page, collage, index |
 | `name` | the bird's common name | the one-bird views |
 | `sci` | the bird's scientific name | the one-bird views |
-| `when` | *Heard today at 08:14* or *Least heard: 2 calls* | the one-bird views |
+| `time` | when it was heard, *1:59 PM* — **off unless asked for** | `latest` |
+| `count` | *30 calls over seven days* | `top`, `rare` |
 
 So `?view=index` is the bare index, and `?view=index&show=date,periods`
 puts the date and the period buttons back above it. Going the other way,
@@ -157,8 +160,11 @@ a collage card to keep the birds large.
     /?view=rare&period=today
     one bird: today's least-heard, with its name and count
 
-    /?view=rare&period=week&hide=sci,when
-    the same for the week, picture and name only
+    /?view=latest&show=time
+    the last bird heard, with the time it called
+
+    /?view=rare&period=week&hide=sci,count
+    the week's least-heard, picture and name only
 
     /?view=index&limit=12&show=date
     the twelve most-heard species, under the date
