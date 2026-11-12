@@ -6,8 +6,10 @@
   period buttons, the collage and the index, and cap how many species are
   shown.
 - The same settings can be put in the address, so one station can feed
-  several Home Assistant cards: `?view=plate`, `?view=index`,
-  `?view=latest`, with `hide=`, `show=` and `limit=`.
+  several Home Assistant cards: `?view=plate`, `?view=index` and the
+  one-bird views, each showing only its own subject, with `hide=`, `show=`,
+  `period=` and `limit=` to adjust them.
+- Station settings can build a card's address for you, with a live preview.
 - New single-bird views for a small card: `?view=latest` for the bird heard
   most recently, `?view=top` for the one heard most often, `?view=rare` for
   the one heard least.

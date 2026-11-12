@@ -98,47 +98,80 @@ the call, with a second either side) all work. Some things differ:
 ## Home Assistant
 
 Add a view to a dashboard, give it the **Grid** layout, then add **Webpage**
-cards pointing at Birdsong. Each card can show a different part of the page,
-so the collage, the index and the latest bird can sit side by side:
+cards pointing at Birdsong. Each card carries its own settings in its
+address, so one station can feed several cards showing different things.
 
-| Card | Address |
+**Station settings builds the addresses for you.** Under *Home Assistant
+card*, pick what the card should show, choose a period and a species limit,
+and watch the preview; then copy the address. The rest of this section is
+what those addresses mean, if you would rather write them by hand.
+
+### Views
+
+`?view=` decides what the card is about. Each view shows **only its own
+subject** — no title, date, totals or buttons unless you ask for them.
+
+| Address | Card |
 |---|---|
-| Everything | `http://192.168.1.50:8095/` |
-| Collage only | `http://192.168.1.50:8095/?view=plate` |
-| Index only | `http://192.168.1.50:8095/?view=index` |
-| Latest bird | `http://192.168.1.50:8095/?view=latest` |
-| Most heard | `http://192.168.1.50:8095/?view=top` |
-| Least heard | `http://192.168.1.50:8095/?view=rare` |
+| `/` | the whole page, as you see it in a browser |
+| `/?view=plate` | the collage of birds, nothing else |
+| `/?view=index` | the index of species, nothing else |
+| `/?view=latest` | one bird: the last one heard |
+| `/?view=top` | one bird: the one heard most in the period |
+| `/?view=rare` | one bird: the one heard least in the period |
 
-The last three fill the card with a single bird: the one heard most
-recently, the one heard most often in the chosen period, or the one heard
-least.
+### Adding and removing parts
 
-Station settings builds these for you: set what you want shown, then use the
-buttons under **Address for a Home Assistant card** to copy one.
+`hide=` and `show=` take a comma-separated list. Which names apply depends
+on the view:
 
-Anything can be switched off per card by adding `hide=`, and the number of
-species capped with `limit=`:
+| Name | What it is | Applies to |
+|---|---|---|
+| `title` | the word Birdsong | page, collage, index |
+| `date` | the date line | page, collage, index |
+| `totals` | the species and call totals | page, collage, index |
+| `number` | the plate number | page, collage, index |
+| `periods` | today / seven days / thirty days / all | page, collage, index |
+| `plate` | the collage of birds | page, collage, index |
+| `index` | the index of species | page, collage, index |
+| `name` | the bird's common name | the one-bird views |
+| `sci` | the bird's scientific name | the one-bird views |
+| `when` | *Heard today at 08:14* or *Least heard: 2 calls* | the one-bird views |
 
-    ?view=plate&hide=title,date,totals,number,periods&limit=24
+So `?view=index` is the bare index, and `?view=index&show=date,periods`
+puts the date and the period buttons back above it. Going the other way,
+`?hide=title,number` trims the full page.
 
-| Name | What it hides |
+### Period and how many species
+
+| Parameter | Does |
 |---|---|
-| `title` | the word Birdsong |
-| `date` | the date line |
-| `totals` | the species and call totals |
-| `number` | the plate number |
-| `periods` | today / seven days / thirty days / all |
-| `plate` | the collage of birds |
-| `index` | the index of species |
+| `period=today` `week` `month` `all` | fixes the period for that card, whatever the page is set to |
+| `limit=20` | shows only the twenty most-heard species |
 
-`show=` turns a part back on in the same way, and `limit=20` keeps the card
-to the twenty most-heard species — worth setting on an index card, which
-otherwise scrolls. A card address never shows the settings link, so set
-things up on the main page first.
+`limit` is worth setting on an index card, which otherwise scrolls, and on
+a collage card to keep the birds large.
 
-Without `view=` or `hide=`, a card follows whatever Station settings has for
-this browser.
+### Examples
+
+    /?view=rare&period=today
+    one bird: today's least-heard, with its name and count
+
+    /?view=rare&period=week&hide=sci,when
+    the same for the week, picture and name only
+
+    /?view=index&limit=12&show=date
+    the twelve most-heard species, under the date
+
+    /?view=plate&show=periods&limit=24&period=month
+    a month's collage of 24 birds, with the period buttons
+
+    /?hide=title,number,totals
+    the whole page, trimmed of its heading furniture
+
+A card address never shows the settings link, so set the station up on the
+main page first. Anything you do not put in the address follows Station
+settings for that browser.
 
 If Home Assistant is opened over HTTPS, the browser will refuse to embed a
 plain-HTTP page inside it: serve Birdsong over HTTPS (see below) and use
