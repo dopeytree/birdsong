@@ -37,7 +37,7 @@ including a little owl heard in the small hours.
     spectrogram
   - other illustrations of the species to choose from
 - **One-screen mode** (on by default): the plate shrinks so the index
-  fits beneath it without scrolling. Switch it off under Station settings.
+  fits beneath it without scrolling. Switch it off under Settings.
 
 ## Run it
 
@@ -79,7 +79,7 @@ BirdNET-Go. To draw its plate, give the station's number instead of
 The station must be public; no token is needed. nginx forwards `/graphql`
 to BirdWeather's public API so the page and its data still share one
 address. Any BirdWeather station works, not only a PUC, and a station can
-also be chosen per browser under Station settings.
+also be chosen per browser under Settings.
 
 BirdWeather has less to say about each bird than BirdNET-Go does. The
 plate, the index, calls each day, last heard, how long the species has
@@ -101,7 +101,7 @@ Add a view to a dashboard, give it the **Grid** layout, then add **Webpage**
 cards pointing at Birdsong. Each card carries its own settings in its
 address, so one station can feed several cards showing different things.
 
-**Station settings builds the addresses for you.** Under *Home Assistant
+**Settings builds the addresses for you.** Under *Home Assistant
 card*, pick what the card should show, choose a period and a species limit,
 and watch the preview; then copy the address. The rest of this section is
 what those addresses mean, if you would rather write them by hand.
@@ -233,7 +233,7 @@ recordings come from BirdWeather.
 
 ## Settings
 
-"Station settings" on the page holds one-screen mode, an optional
+"Settings" on the page holds one-screen mode, an optional
 BirdNET-Go address override, an optional BirdWeather station (which takes
 precedence over both BirdNET-Go and the container's station), and the
 credits. These settings, the last

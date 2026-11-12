@@ -146,7 +146,7 @@ dialog{font:inherit;color:var(--ink);background:var(--paper);border:1px solid va
 dialog::backdrop{background:rgba(42,36,28,.55)}
 /* settings is half transparent, over a gentle fade, so a change to the plate
    can be watched while it is made without the birds fighting the type */
-#settings{background:rgba(238,229,206,.75)}
+#settings{background:rgba(238,229,206,.9)}
 #settings::backdrop{background:rgba(42,36,28,.75)}
 .close{position:absolute;top:.9rem;right:1.1rem;font-style:italic;color:var(--sepia);text-decoration:underline;text-underline-offset:3px;font-size:.95rem}
 #card{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:2rem}
@@ -217,7 +217,7 @@ dd.big{color:var(--madder);font-size:1.3rem;line-height:1.2}
     <h1>Birdsong</h1>
     <p id="sub"><span id="subDate">Listening…</span><span id="subTotals"></span></p>
   </div>
-  <div id="plateno"><span id="pl"></span><button id="openSettings">Station settings</button></div>
+  <div id="plateno"><span id="pl"></span><button id="openSettings">Settings</button></div>
   <nav aria-label="Period">
     <button data-p="today" aria-pressed="false">Today</button>
     <button data-p="week" aria-pressed="true">Seven days</button>
@@ -284,7 +284,7 @@ dd.big{color:var(--madder);font-size:1.3rem;line-height:1.2}
 
 <dialog id="settings">
   <button class="close" data-close>Close</button>
-  <h3>Station settings</h3>
+  <h3>Settings</h3>
   <form method="dialog" id="setForm">
     <details id="stationOpts" open>
       <summary>Station</summary>
