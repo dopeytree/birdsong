@@ -13,6 +13,7 @@ Created by [Ed Stone](https://ed-stone.co.uk). Current version: 0.42
 ([changelog](CHANGELOG.md)); images are also tagged by version, e.g. `:0.42`.
 
 - [Run it](#run-it)
+- [Unraid](#unraid)
 - [Birdweather Station](#from-a-birdweather-station)
 - [Settings](#settings)
 - [Home Assistant](#home-assistant)
