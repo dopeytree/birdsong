@@ -59,12 +59,7 @@ Then open `http://<your-server>:8095`. `BIRDNET_URL` is the address of
 your BirdNET-Go as the container can reach it: use the server's IP, not
 `localhost`. That is the only setting.
 
-- **Unraid:** install the template from the terminal, then Docker tab,
-  Add Container, and choose `birdsong` under Template:
-
-      wget -O /boot/config/plugins/dockerMan/templates-user/my-birdsong.xml \
-        https://raw.githubusercontent.com/dopeytree/birdsong/main/unraid/birdsong.xml
-
+- **Unraid:** see [Unraid](#unraid) below -- it is in the app store.
 - **Compose:** see `docker-compose.yml`.
 - **Preview without a station:** open `/?demo` for a sample plate.
 
@@ -72,6 +67,32 @@ If BirdNET-Go has a password or private mode switched on, allow this
 container's address in BirdNET-Go's security settings. Recordings and
 spectrograms appear only if BirdNET-Go keeps audio clips, and weather
 only if it has a weather provider switched on.
+
+## Unraid
+
+Birdsong is in Community Applications. Open the **Apps** tab, search for
+*birdsong*, and install it. The template sets the port, the data folder
+and the icon; the one thing to fill in is **BirdNET-Go address**, which
+is your BirdNET-Go as the server sees it, such as
+`http://192.168.1.50:8080`. Leave it empty and fill in **BirdWeather
+station** instead to draw the plate from a public station.
+
+The template also maps a **data folder** at `/data`, used only if you
+switch on Unraid's per-container Tailscale, which keeps its state there.
+See [HTTPS with Tailscale](#https-with-tailscale) if you want to reach
+the plate from outside the house, or put it in a Home Assistant card
+served over HTTPS.
+
+To install the template by hand -- to try a change before the store has
+caught up, say -- fetch it to Unraid's template folder from the terminal,
+then go to the Docker tab, Add Container, and choose `birdsong` under
+Template:
+
+    wget -O /boot/config/plugins/dockerMan/templates-user/my-birdsong.xml \
+      https://raw.githubusercontent.com/dopeytree/birdsong/main/unraid/birdsong.xml
+
+Community Applications refreshes its templates roughly every two hours,
+so a new release takes a little while to show up in the Apps tab.
 
 ## From a BirdWeather station
 
