@@ -9,6 +9,9 @@ one setting. It can also draw from a public
 [BirdWeather](https://app.birdweather.com) station, such as a PUC, with no
 BirdNET-Go at all.
 
+[![Sponsor](https://img.shields.io/badge/Sponsor-dopeytree-9c3b2e?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/dopeytree)
+[![Ko-fi](https://img.shields.io/badge/Ko--fi-dopeytree-9c3b2e?logo=kofi&logoColor=white)](https://ko-fi.com/dopeytree)
+
 Created by [Ed Stone](https://ed-stone.co.uk). Current version: 0.42
 ([changelog](CHANGELOG.md)); images are also tagged by version, e.g. `:0.42`.
 
