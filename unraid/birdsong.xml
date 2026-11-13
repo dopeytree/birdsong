@@ -19,8 +19,8 @@ Requires a running BirdNET-Go, or a public BirdWeather station such as a PUC. Se
   <ExtraParams>--restart unless-stopped</ExtraParams>
   <PostArgs/>
   <CPUset/>
-  <DonateText/>
-  <DonateLink/>
+  <DonateText>Birdsong is free. If it brightens your mornings, you can support it.</DonateText>
+  <DonateLink>https://github.com/sponsors/dopeytree</DonateLink>
   <Requires>BirdNET-Go, installed separately and reachable from this container; or a public BirdWeather station.</Requires>
   <Config Name="WebUI port" Target="80" Default="8095" Mode="tcp" Description="Port the Birdsong page is served on." Type="Port" Display="always" Required="true" Mask="false">8095</Config>
   <Config Name="BirdNET-Go address" Target="BIRDNET_URL" Default="http://192.168.1.50:8080" Mode="" Description="Address of your BirdNET-Go, with http:// and its port, for example http://192.168.1.50:8080. Use the server's IP, not localhost. Not needed when a BirdWeather station is set." Type="Variable" Display="always" Required="false" Mask="false">http://192.168.1.50:8080</Config>

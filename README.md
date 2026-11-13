@@ -12,6 +12,8 @@ BirdNET-Go at all.
 Created by [Ed Stone](https://ed-stone.co.uk). Current version: 0.42
 ([changelog](CHANGELOG.md)); images are also tagged by version, e.g. `:0.42`.
 
+[![Sponsor](https://img.shields.io/badge/Sponsor-9c3b2e?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/dopeytree)
+
 - [Run it](#run-it)
 - [Unraid](#unraid)
 - [Birdweather Station](#from-a-birdweather-station)
