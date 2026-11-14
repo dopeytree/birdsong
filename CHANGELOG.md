@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Two sample plates instead of one. The first is five creatures -- a northern
+  cardinal, a blue jay, a snowy owl, a greenfinch and a blue tit -- and is what
+  stands in when there is no station to draw from. The garden's worth of birds
+  is still there as the second, under Settings or at `?demo=2`.
+
 - A plate found on Wikimedia Commons is now ranked by which animal it shows
   before who drew it. Naming the species counts for more than any hand, so a
   famous plate of the wrong creature no longer wins. Buffon's mammal volumes

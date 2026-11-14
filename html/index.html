@@ -292,7 +292,8 @@ dd.big{color:var(--madder);font-size:1.3rem;line-height:1.2}
       <p>The number at the end of a public station's page, <i>app.birdweather.com/stations/12345</i>. Filled in, the plate comes from there instead. Empty uses <code>BIRDWEATHER_STATION</code>.</p>
       <div class="cardrow">
         <button class="btn" value="save">Save and reload</button>
-        <button class="btn" value="sample" type="button" id="showSample">Show the sample plate</button>
+        <button class="btn" value="sample" type="button" id="showSample">Sample plate</button>
+        <button class="btn" value="sample2" type="button" id="showSample2">Sample plate 2</button>
       </div>
     </details>
 
@@ -447,6 +448,7 @@ const store = {
 const params = new URLSearchParams(location.search);
 const server = (params.get("server") || store.get("server", "") || CONFIG.server).replace(/\/+$/, "");
 let demo = params.has("demo");
+const demoPlate = (params.get("demo") || "") === "2" ? 2 : 1;   // ?demo, or ?demo=2
 
 /* What this page shows. The settings panel sets the defaults for this browser;
    a URL sets them for one page, so several Home Assistant cards can show
@@ -538,7 +540,7 @@ const urlPeriod = (params.get("period") || "").toLowerCase();
 let period = PERIODS.includes(urlPeriod) ? urlPeriod : store.get("period", "week");
 
 async function fetchSpecies() {
-  if (demo) return sample();
+  if (demo) return sample(demoPlate);
   if (SOURCE.bw) return fetchSpeciesBW();
   let path;
   const day = ymd(new Date());
@@ -615,7 +617,27 @@ async function fetchSpeciesBW() {
   }).filter(s => s.sci && s.count > 0).sort((a, b) => b.count - a.count);
 }
 
-function sample() {
+/* Two plates to show when there is no station to draw from: five creatures,
+   and a garden's worth. The first is what stands in before a station is named. */
+const SAMPLE = "Northern Cardinal,Cardinalis cardinalis,222,13:50:13;Blue Jay,Cyanocitta cristata,44,13:53:12;" +
+  "Snowy Owl,Bubo scandiacus,33,13:53:47;European Greenfinch,Chloris chloris,22,13:55:20;" +
+  "Eurasian Blue Tit,Cyanistes caeruleus,11,13:54:49";
+
+function sample(which) { return which === 2 ? gardenSample() : fiveSample(); }
+
+function fiveSample() {
+  return SAMPLE.split(";").map((r, i) => {
+    const [common, sci, c, t] = r.split(","), count = +c, hour = +t.slice(0, 2);
+    let seed = i * 61 + 7; const rnd = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
+    const w = Array.from({ length: 24 }, (_, h) => Math.exp(-((h - hour) ** 2) / 9) * (.5 + rnd()) + .04);
+    const tot = w.reduce((a, b) => a + b, 0);
+    return { sci, common, count, hourly: w.map(x => Math.round(x / tot * count)), first: "",
+      last: ymd(new Date()) + " " + t, maxConf: .88 + rnd() * .11, avgConf: 0,
+      daysKnown: 30 + i * 11, newSeason: i === 2, season: "autumn", thumb: "" };
+  });
+}
+
+function gardenSample() {
   const raw = "Robin,Erithacus rubecula,148;Blackbird,Turdus merula,121;Wood Pigeon,Columba palumbus,96;Blue Tit,Cyanistes caeruleus,88;Great Tit,Parus major,74;House Sparrow,Passer domesticus,69;Jackdaw,Corvus monedula,61;Carrion Crow,Corvus corone,47;Magpie,Pica pica,44;Wren,Troglodytes troglodytes,41;Dunnock,Prunella modularis,37;Starling,Sturnus vulgaris,35;Goldfinch,Carduelis carduelis,33;Chaffinch,Fringilla coelebs,29;Tawny Owl,Strix aluco,24;Long-tailed Tit,Aegithalos caudatus,22;Coal Tit,Periparus ater,19;Redwing,Turdus iliacus,18;Song Thrush,Turdus philomelos,16;Great Spotted Woodpecker,Dendrocopos major,14;Nuthatch,Sitta europaea,13;Greenfinch,Chloris chloris,12;Jay,Garrulus glandarius,9;Fieldfare,Turdus pilaris,9;Buzzard,Buteo buteo,8;Pied Wagtail,Motacilla alba,7;Goldcrest,Regulus regulus,7;Mallard,Anas platyrhynchos,6;Green Woodpecker,Picus viridis,6;Bullfinch,Pyrrhula pyrrhula,5;Mistle Thrush,Turdus viscivorus,5;Pheasant,Phasianus colchicus,4;Siskin,Spinus spinus,4;Grey Heron,Ardea cinerea,3;Sparrowhawk,Accipiter nisus,3;Moorhen,Gallinula chloropus,3;Kestrel,Falco tinnunculus,2;Barn Owl,Tyto alba,2;Raven,Corvus corax,2";
   const mult = { today: 1, week: 6, month: 24, all: 110 }[period];
   return raw.split(";").map((r, i) => {
@@ -989,7 +1011,7 @@ async function refresh(initial) {
     try { rows = await fetchSpecies(); $("#notice").textContent = demo ? "This is a sample plate, not your station." : ""; }
     catch (e) {
       if (!initial && species.length) { busy = false; return; }   // keep what we have through a hiccup
-      demo = true; rows = sample();
+      demo = true; rows = sample(1);
       const msg = !(e instanceof TypeError) ? e.message
         : SOURCE.bw ? "BirdWeather could not be reached" + (SOURCE.endpoint === "graphql" ? " through this page's address" : "") + "."
         : "BirdNET-Go could not be reached" + (server ? " at " + server : " through this page's address") + ".";
@@ -1302,7 +1324,7 @@ function cardDefaults(v) {
 function cardAddress() {
   const u = new URL(location.pathname, location.href);
   if (card.view) u.searchParams.set("view", card.view);
-  if (demo) u.searchParams.set("demo", "");
+  if (demo) u.searchParams.set("demo", demoPlate === 2 ? "2" : "");
   if (card.period) u.searchParams.set("period", card.period);
   if (card.limit) u.searchParams.set("limit", card.limit);
   const base = cardDefaults(card.view), fields = cardFields(card.view);
@@ -1372,6 +1394,7 @@ $("#setForm").addEventListener("submit", () => {
   location.href = location.pathname;
 });
 $("#showSample").addEventListener("click", () => { location.href = location.pathname + "?demo"; });
+$("#showSample2").addEventListener("click", () => { location.href = location.pathname + "?demo=2"; });
 document.querySelectorAll("[data-close]").forEach(b => b.addEventListener("click", () => b.closest("dialog").close()));
 document.querySelectorAll("dialog").forEach(d => d.addEventListener("click", e => { if (e.target === d) d.close(); }));
 
