@@ -333,6 +333,69 @@ All of this, the last period chosen, and any illustration you pick for a
 bird are remembered per browser, not shared between devices. A card
 address overrides them for that card alone.
 
+## Trying a creature without waiting for one
+
+Waiting for a tawny owl in order to see how a tawny owl looks is a slow way
+to work. `tools/bench.py` stands in for BirdNET-Go: it answers the same
+endpoints from a list of creatures you type in. No packages, nothing saved.
+
+    docker build -t birdsong-bench tools/
+    docker run -d --name birdsong-bench -p 8099:8099 birdsong-bench
+
+or, without Docker, `python3 tools/bench.py`.
+
+In a compose file beside BirdNET-Go, where it can ask the station what
+creatures it knows:
+
+    bench:
+      build: https://github.com/dopeytree/birdsong.git#main:tools
+      container_name: birdsong-bench
+      ports:
+        - "8099:8099"
+      environment:
+        - BENCH_ARGS=--birdnet http://birdnet-go:8080
+
+The container carries the whole species list, fetched when it was built, so it
+asks nothing of the network when it runs and needs no Python of your own.
+
+Its page is at `http://localhost:8099`, and that address is what you give
+Birdsong: put it under **BirdNET-Go address** in Birdsong's own settings, or
+add `?server=http://localhost:8099` to the page's address. Clicking the
+address on the bench's page copies it. It has to be reachable from your
+browser rather than from inside the container.
+
+Type a few letters of a creature -- `fox`, `tawny`, `pipi` -- and pick it from
+the list; it appears on the plate at once. Common names are searched before
+scientific ones, and a scientific name you type yourself is used as it stands.
+Each row has *again*, to hear it once more just now, and *drop*; *Reset*
+empties the list.
+
+The list to search is gathered at startup, and the page says how many
+creatures it holds and where they came from. In order:
+
+- a station, if one is named -- the best source, since it knows what your own
+  models have been taught, mammals and bats included;
+- a `labels.txt` lying in the folder you run it from, or beside the script;
+- the BirdNET label list, 6,522 creatures, downloaded once and kept in
+  `~/.cache/birdsong-bench/labels.txt`;
+- failing all three, the hundred and thirty-odd built in, which cover a
+  British garden.
+
+If the download fails -- a Mac's Python often cannot verify TLS until its
+certificates are installed -- fetch the list yourself and leave it where the
+bench will find it:
+
+    curl -L -o labels.txt https://huggingface.co/tphakala/BirdNET-v2.4/resolve/main/labels.txt
+
+<!-- -->
+
+    python3 tools/bench.py 8099 --birdnet http://192.168.1.50:8080
+    python3 tools/bench.py 8099 --labels ./labels.txt     # a list of your own
+
+A list of your own is one `Scientific name_Common name` to a line, which is
+how BirdNET writes them. If the download fails the bench says which address
+it tried and what went wrong, rather than quietly falling back.
+
 ## Build it yourself
 
     docker build -t birdsong .
