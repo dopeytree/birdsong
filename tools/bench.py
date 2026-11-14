@@ -188,6 +188,12 @@ KNOWN = []          # [(common, sci)]
 KNOWN_FROM = "the built-in list"
 
 
+def names_in(text):
+    """How many 'Scientific name_Common name' lines this looks to hold."""
+    return sum(1 for line in text.splitlines()[:9000]
+               if re.match(r"^[A-Z][A-Za-z.'\- ]+_[^_]+$", line.strip()))
+
+
 def fetch(url, timeout=25):
     import urllib.request
     req = urllib.request.Request(url, headers={"User-Agent": "birdsong-bench"})
@@ -240,38 +246,62 @@ def load_known(birdnet=None, labels=None):
         else:
             print("  %s told us nothing; tried %s" % (birdnet, ", ".join(BIRDNET_PATHS)))
 
-    before, text = len(out), ""
+    before, text, got = len(out), "", ""
     if labels:                                             # a file or a URL given by hand
         try:
-            text = fetch(labels) if "://" in labels else open(labels, encoding="utf8").read()
-            where.append("from " + labels)
+            raw = fetch(labels) if "://" in labels else open(labels, encoding="utf8").read()
+            if names_in(raw) == 0:
+                print("  %s: %d bytes, but no 'Scientific name_Common name' lines in it"
+                      % (labels, len(raw)))
+            else:
+                text, got = raw, labels
         except Exception as e:
             print("  could not read %s (%s)" % (labels, e))
+
     if not text:
-        try:
-            text = open(CACHE, encoding="utf8").read()
-            where.append("from the saved copy")
+        try:                                               # a copy kept from last time
+            raw = open(CACHE, encoding="utf8").read()
+            if names_in(raw) < 100:
+                print("  the saved copy held nothing usable; fetching again")
+                os.remove(CACHE)
+            else:
+                text, got = raw, "the saved copy"
         except Exception:
-            for url in LABEL_URLS:
-                try:
-                    text = fetch(url)
-                    where.append("from " + url.split("/")[2])
-                    try:
-                        os.makedirs(os.path.dirname(CACHE), exist_ok=True)
-                        open(CACHE, "w", encoding="utf8").write(text)
-                    except Exception:
-                        pass
-                    break
-                except Exception as e:
-                    print("  %s: %s" % (url.split("/")[2], e))
+            pass
+
+    if not text:
+        for url in LABEL_URLS:
+            host = url.split("/")[2]
+            try:
+                raw = fetch(url)
+            except Exception as e:
+                print("  %s: %s" % (host, e))
+                continue
+            n = names_in(raw)
+            if n < 100:                                    # a login page, an error page
+                print("  %s: answered with %d bytes holding %d names, which is not the list"
+                      % (host, len(raw), n))
+                continue
+            text, got = raw, host
+            try:
+                os.makedirs(os.path.dirname(CACHE), exist_ok=True)
+                open(CACHE, "w", encoding="utf8").write(raw)
+                print("  kept a copy at %s" % CACHE)
+            except Exception as e:
+                print("  could not keep a copy (%s)" % e)
+            break
+
     for line in text.splitlines():
         if "_" in line:
             sci, common = line.split("_", 1)
             add(common, sci)
     if len(out) - before:
-        where[-1] = "%d %s" % (len(out) - before, where[-1])
-    elif where and not where[-1][0].isdigit():
-        where.pop()
+        where.append("%d from %s" % (len(out) - before, got))
+    elif not labels:
+        print("  no label list could be had from any of:")
+        for url in LABEL_URLS:
+            print("    " + url)
+        print("  give one with --labels, or a station with --birdnet")
 
     before = len(out)
     for line in BUILT_IN.splitlines():
