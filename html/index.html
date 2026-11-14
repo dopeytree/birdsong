@@ -306,6 +306,7 @@ dd.big{color:var(--madder);font-size:1.3rem;line-height:1.2}
       <label class="check"><input type="checkbox" data-opt="periods"> Today / seven days / thirty days / all</label>
       <label class="check"><input type="checkbox" data-opt="plate"> The collage of birds</label>
       <label class="check"><input type="checkbox" data-opt="index"> Index of species</label>
+      <label class="check"><input type="checkbox" id="partsOpt"> Offer skulls, wings and eggs among the plates</label>
       <label for="lim">Limit species</label>
       <input id="lim" type="number" min="0" step="1" placeholder="all of them">
     </details>
@@ -393,6 +394,9 @@ const CURATED_RAW = {
     ["Columba decaocto Frivaldski.jpg", "Frivaldszky's plate from the first description of the species, 1838."],
     ["TurturStoliczkaeKeulemans.jpg", "J. G. Keulemans, 19th century."],
     ["Turtle dove Albin.jpg", "Eleazar Albin, A Natural History of Birds, 1731–38."]
+  ],
+  "Vulpes vulpes": [
+    ["Keulemans common fox.png", "J. G. Keulemans, for St George Mivart's Dogs, Jackals, Wolves and Foxes, 1890."]
   ],
   "Cygnus olor": [
     ["A natural history of birds - illustrated with a hundred and one copper plates, curiously engraven from the life (1731) (14563733179).jpg", "Eleazar Albin, A Natural History of Birds, 1731."]
@@ -629,11 +633,27 @@ function sample() {
    =================================================================== */
 function kbPlates(sci) { return [...(CURATED[sci] || []), ...(KB[sci] || KB[SYNONYM[sci]] || [])]; }
 
-function scoreCandidate(title, sci) {
+/* A plate of a part rather than the whole creature. Naming the kinds, rather
+   than simply refusing them, leaves room to ask for a plate of skulls later. */
+const PLATE_PART = [
+  ["skull",   /\bskulls?\b|\bskelet|\bcrania?\b|\bcranium\b/i],
+  ["teeth",   /\bteeth\b|\btooth\b|dentition/i],
+  ["anatomy", /\bbrains?\b|viscera|anatom|dissect/i],
+  ["wing",    /\bwings?\b|\bfeathers?\b|\bplumes?\b/i],
+  ["foot",    /\bfoot\b|\bfeet\b|\bclaws?\b|\btalons?\b/i],
+  ["head",    /\bheads?\b|\bkop\b|\beyes?\b/i],
+  ["egg",     /\beggs?\b|\bnests?\b/i]
+];
+const plateKind = t => (PLATE_PART.find(([, re]) => re.test(t)) || [""])[0];
+
+function scoreCandidate(title, sci, common, parts) {
   const t = title.replace(/^File:/, ""), low = t.toLowerCase(), squashed = low.replace(/[\s_]/g, "");
-  if (/crossley|\bmap\b|eggs?\b|\bnest|wing|skull|skelet|\bhead\b|\bkop\b|stamp|mural|distribution|\.svg$|\.ogg$|\.pdf$|\.webm$| & /i.test(t)) return -1;
+  if (/crossley|\bmap\b|stamp|mural|distribution|taxiderm|\.svg$|\.ogg$|\.pdf$|\.webm$| & /i.test(t)) return -1;
+  const kind = plateKind(t);
+  if (kind && !parts) return -1;
   let s = 0;
-  if (/albin|selby|frivald|bewick|edwards|donovan|lewin|martinet|buffon|natural history of birds|nederlandsche vogelen/i.test(t)) s += 100;  // figures on plain paper
+  if (/albin|selby|frivald|bewick|edwards|donovan|lewin|martinet|natural history of birds|nederlandsche vogelen/i.test(t)) s += 100;  // figures on plain paper
+  else if (/buffon/i.test(t)) s += /oiseaux|birds/i.test(t) ? 100 : 55;  // he ran to mammals too, on busier pages
   else if (/keulemans onze vogels/i.test(t)) s += 90;
   else if (/keulemans/i.test(t)) s += 80;
   else if (/naumann/i.test(t)) s += 75;
@@ -641,15 +661,24 @@ function scoreCandidate(title, sci) {
   else if (/gould/i.test(t)) s += 60;
   else if (/lilford|thorburn/i.test(t)) s += 55;
   else if (/audubon/i.test(t)) s += 55;
+  else if (/brehm|mivart|lydekker|joseph wolf|harrison weir|royal natural history/i.test(t)) s += 50;  // the same age, drawing animals
   else if (/wellcome|engraving|lithograph/i.test(t)) s += 40;
   else if (/zwarts/i.test(t)) s += 30;
   else if (/iconographia zoologica/i.test(t)) s += 20;
+
+  // Which animal the plate is of matters more than who drew it: a famous hand
+  // on the wrong creature is no use here.
+  const name = (common || "").toLowerCase().replace(/\s*\/.*$/, "").trim();
   if (squashed.includes(sci.toLowerCase().replace(/\s/g, ""))) s += 50;
-  return s;
+  else if (name && squashed.includes(name.replace(/[\s-]/g, ""))) s += 25;
+  if (/ (and|et|und) /i.test(low)) s -= 35;      // two creatures to a page, as a rule
+  s = Math.max(s, 0);                            // only the list above throws a plate out
+  return kind ? s / 100 : s;                     // a part is offered, never chosen first
 }
 
-async function commonsPlates(sci) {
-  const cached = store.get("cat2." + sci);
+async function commonsPlates(sci, common) {
+  const parts = store.get("parts", false), key = "cat2." + (parts ? "p." : "") + sci;
+  const cached = store.get(key);
   if (cached && Date.now() - cached.t < 30 * 864e5) return cached.v;
   let v = [];
   try {
@@ -658,11 +687,11 @@ async function commonsPlates(sci) {
     v = Object.values((j.query && j.query.pages) || {}).map(p => {
       const ii = p.imageinfo && p.imageinfo[0];
       if (!ii || !/^image\/(jpeg|png|tiff)$/.test(ii.mime) || ii.width < 400 || !ii.thumburl) return null;
-      const score = scoreCandidate(p.title, sci);
+      const score = scoreCandidate(p.title, sci, common, parts);
       return score < 0 ? null : { score, file: p.title.replace(/^File:/, ""), src: ii.thumburl, large: ii.thumburl, page: ii.descriptionurl,
         credit: p.title.replace(/^File:/, "").replace(/\.\w+$/, "").replace(/\s*\(\d{6,}\)/, "") + ". Wikimedia Commons." };
     }).filter(Boolean).sort((a, b) => b.score - a.score).slice(0, 12);
-    store.set("cat2." + sci, { t: Date.now(), v });
+    store.set(key, { t: Date.now(), v });
   } catch (e) { /* offline or blocked: fall through to whatever else we have */ }
   return v;
 }
@@ -674,7 +703,7 @@ async function choosePlates(sp) {
   const fr = frPlates(sp.sci), kb = kbPlates(sp.sci);
   if (fr.length) return [fr[0], ...kb.slice(0, 1)];
   if (kb.length) return [kb[0]];
-  const c = await commonsPlates(sp.sci);
+  const c = await commonsPlates(sp.sci, sp.common);
   if (c.length) return c.slice(0, 6);
   if (sp.thumb) return [{ src: sp.thumb, large: sp.thumb, photo: true, credit: "No engraved plate found. Photograph supplied by " + SOURCE.name + "." }];
   return [];
@@ -1033,7 +1062,7 @@ async function openDetail(sp) {
   $("#alts").replaceChildren(); $("#altLabel").style.display = "none";
   if (!detail.open) detail.showModal();
   loadBlurb(sp);
-  const alts = [...frPlates(sp.sci), ...kbPlates(sp.sci), ...(await commonsPlates(sp.sci))];
+  const alts = [...frPlates(sp.sci), ...kbPlates(sp.sci), ...(await commonsPlates(sp.sci, sp.common))];
   if ($("#dSci").textContent !== sp.sci || alts.length < 2 && !(alts.length === 1 && (!plate || plate.src !== alts[0].src))) return;
   $("#altLabel").style.display = "";
   $("#alts").replaceChildren(...alts.map(a => {
@@ -1243,9 +1272,12 @@ function openSettings() {
   card.view = ""; card.on = cardDefaults(""); card.period = ""; card.limit = 0;
   $("#cardPeriod").value = ""; $("#cardLimit").value = ""; cardBuild();
   $("#srv").value = store.get("server", "") || CONFIG.server; $("#stn").value = store.get("station", "");
-  $("#fitOpt").checked = fit; settings.showModal();
+  $("#fitOpt").checked = fit; $("#partsOpt").checked = store.get("parts", false); settings.showModal();
 }
 $("#fitOpt").addEventListener("change", e => { fit = e.target.checked; store.set("fit", fit); layout(); });
+$("#partsOpt").addEventListener("change", e => {
+  store.set("parts", e.target.checked); figures.clear(); refresh(true);
+});
 document.querySelectorAll("#showOpts [data-opt]").forEach(b => b.addEventListener("change", e => {
   const p = b.dataset.opt; opt[p] = e.target.checked; store.set("show." + p, opt[p]);
   applyOptions(); renderHeading(); renderIndex(); refresh(true);

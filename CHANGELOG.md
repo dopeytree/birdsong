@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+- A plate found on Wikimedia Commons is now ranked by which animal it shows
+  before who drew it. Naming the species counts for more than any hand, so a
+  famous plate of the wrong creature no longer wins. Buffon's mammal volumes
+  are separated from his birds, plates holding two animals are marked down,
+  and a few of the age's animal illustrators are recognised, which matters
+  now BirdNET-Go can hear foxes and badgers as well as birds. Skulls and
+  brains join the anatomy already turned away. The red fox has a curated
+  plate of its own, drawn by Keulemans.
+- A plate of a part rather than the whole creature -- a skull, a wing, a
+  foot, an egg -- can be offered among the alternatives, under Settings.
+  Off by default, and such a plate is never the one chosen first.
+- Fixed: no waxwing or lapwing could take a plate from Wikimedia Commons.
+  Plates of a wing were turned away by looking for "wing" anywhere in the
+  name, which is also how those two birds are spelt.
+
 - Settings can now switch off the title, date, totals, plate number,
   period buttons, the collage and the index, and cap how many species are
   shown.
