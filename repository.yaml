@@ -1,0 +1,5 @@
+# Lets Home Assistant install Birdsong as an app: Settings > Apps > App store >
+# the three dots > Repositories, then add https://github.com/dopeytree/birdsong
+name: Birdsong
+url: https://github.com/dopeytree/birdsong
+maintainer: Ed Stone

@@ -26,6 +26,15 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - id: version
         run: echo "version=$(cat VERSION)" >> "$GITHUB_OUTPUT"
+      - name: Home Assistant app version matches VERSION
+        # Home Assistant pulls the image tagged with the app's version, and
+        # offers an update only when that version changes.
+        run: |
+          app=$(sed -n 's/^version: *"\{0,1\}\([^"]*\)"\{0,1\}.*/\1/p' homeassistant/birdsong/config.yaml)
+          if [ "$app" != "$(cat VERSION)" ]; then
+            echo "::error file=homeassistant/birdsong/config.yaml::version is $app but VERSION is $(cat VERSION)"
+            exit 1
+          fi
       - id: meta
         uses: docker/metadata-action@v5
         with:

@@ -1,0 +1,16 @@
+#!/bin/sh
+# --- Home Assistant app options (only when run as a Home Assistant app) -------
+# Home Assistant writes the app's Configuration tab to /data/options.json, on
+# one line, for example
+#   {"birdnet_url":"http://192.168.1.50:8080","birdweather_station":""}
+# Read each setting into the variable the rest of start-up already uses. An
+# empty setting leaves the variable as it was. Outside Home Assistant there is
+# no such file and this does nothing. Both values are plain strings (an address
+# and a station number), so sed is enough and the image needs no JSON tool.
+opts=/data/options.json
+if [ -f "$opts" ]; then
+  option() { sed -n "s/.*\"$1\"[[:space:]]*:[[:space:]]*\"\([^\"]*\)\".*/\1/p" "$opts"; }
+  v=$(option birdnet_url);         [ -n "$v" ] && export BIRDNET_URL="$v"
+  v=$(option birdweather_station); [ -n "$v" ] && export BIRDWEATHER_STATION="$v"
+  unset -f option 2>/dev/null; unset v
+fi
