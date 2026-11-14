@@ -353,10 +353,17 @@ creatures it holds and where they came from. In order:
 
 - a station, if one is named -- the best source, since it knows what your own
   models have been taught, mammals and bats included;
+- a `labels.txt` lying in the folder you run it from, or beside the script;
 - the BirdNET label list, 6,522 creatures, downloaded once and kept in
   `~/.cache/birdsong-bench/labels.txt`;
-- failing both, the hundred and thirty-odd built in, which cover a British
-  garden.
+- failing all three, the hundred and thirty-odd built in, which cover a
+  British garden.
+
+If the download fails -- a Mac's Python often cannot verify TLS until its
+certificates are installed -- fetch the list yourself and leave it where the
+bench will find it:
+
+    curl -L -o labels.txt https://huggingface.co/tphakala/BirdNET-v2.4/resolve/main/labels.txt
 
 <!-- -->
 

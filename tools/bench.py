@@ -195,10 +195,34 @@ def names_in(text):
 
 
 def fetch(url, timeout=25):
+    """Python's own fetch, then curl -- a Mac's Python often cannot verify TLS
+       until its certificates are installed, where curl has no such trouble."""
     import urllib.request
-    req = urllib.request.Request(url, headers={"User-Agent": "birdsong-bench"})
-    with urllib.request.urlopen(req, timeout=timeout) as r:
-        return r.read().decode("utf8", "replace")
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "birdsong-bench"})
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            return r.read().decode("utf8", "replace")
+    except Exception as first:
+        try:
+            import subprocess
+            out = subprocess.run(["curl", "-fsSL", "--max-time", str(timeout), url],
+                                 capture_output=True, timeout=timeout + 5)
+            if out.returncode == 0 and out.stdout:
+                return out.stdout.decode("utf8", "replace")
+        except Exception:
+            pass
+        raise first
+
+
+def beside_me():
+    """A list sitting in the working folder, or beside this script."""
+    here = os.path.dirname(os.path.abspath(__file__))
+    for d in (os.getcwd(), here):
+        for name in ("labels.txt", "BirdNET_GLOBAL_6K_V2.4_Labels.txt"):
+            f = os.path.join(d, name)
+            if os.path.exists(f):
+                return f
+    return ""
 
 
 def rows_from_birdnet(base, add):
@@ -257,6 +281,16 @@ def load_known(birdnet=None, labels=None):
                 text, got = raw, labels
         except Exception as e:
             print("  could not read %s (%s)" % (labels, e))
+
+    if not text:                                           # one lying in the folder
+        found = beside_me()
+        if found:
+            try:
+                raw = open(found, encoding="utf8").read()
+                if names_in(raw) >= 100:
+                    text, got = raw, found
+            except Exception as e:
+                print("  could not read %s (%s)" % (found, e))
 
     if not text:
         try:                                               # a copy kept from last time
