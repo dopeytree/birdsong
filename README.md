@@ -336,18 +336,26 @@ endpoints from a list of creatures you type in. No packages, nothing saved.
 
     python3 tools/bench.py
 
-Then open Birdsong against it, instead of your station:
-
-    http://localhost:8095/?server=http://localhost:8099
-
-The bench's own page is at `http://localhost:8099`. Name a creature, press
-*Heard it*, and it appears on the plate. There are buttons for a few to hand
--- a fox, a badger, a pipistrelle -- and *Look up* will find a scientific name
-from a common one, or the other way round, since Birdsong draws by the
-scientific name. *Reset* empties the list.
-
-The address goes in your browser's bar, so it has to be reachable from the
+Its page is at `http://localhost:8099`, and that address is what you give
+Birdsong: put it under **BirdNET-Go address** in Birdsong's own settings, or
+add `?server=http://localhost:8099` to the page's address. Clicking the
+address on the bench's page copies it. It has to be reachable from your
 browser rather than from inside the container.
+
+Type a few letters of a creature -- `fox`, `tawny`, `pipi` -- and pick it from
+the list; it appears on the plate at once. Common names are searched before
+scientific ones, and a scientific name you type yourself is used as it stands.
+Each row has *again*, to hear it once more just now, and *drop*; *Reset*
+empties the list.
+
+The list to search is gathered at startup: the BirdNET label list if it can be
+fetched, and failing that the hundred and thirty-odd creatures built in, which
+cover a British garden. Point it at a real station to search what that station
+actually knows:
+
+    python3 tools/bench.py 8099 --birdnet http://192.168.1.50:8080
+
+The page says how many creatures it is searching, and where they came from.
 
 ## Build it yourself
 
