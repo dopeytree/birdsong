@@ -17,6 +17,7 @@ Created by [Ed Stone](https://ed-stone.co.uk). Current version: 0.42
 
 - [Run it](#run-it)
 - [Unraid](#unraid)
+- [Home Assistant app](#home-assistant-app)
 - [Birdweather Station](#from-a-birdweather-station)
 - [Settings](#settings)
 - [Home Assistant](#home-assistant)
@@ -103,6 +104,18 @@ one of it rather than two drifting apart.
 
 Community Applications refreshes its templates roughly every two hours,
 so a new release takes a little while to show up in the Apps tab.
+
+## Home Assistant app
+
+Birdsong also installs as a Home Assistant app, on Home Assistant OS or a
+Supervised install. In Home Assistant open **Settings > Apps > App store**,
+choose the three dots, then **Repositories**, and add
+`https://github.com/dopeytree/birdsong`. Install **Birdsong**, fill in the
+BirdNET-Go address (or a BirdWeather station) on its **Configuration** tab,
+and start it. The page is on port 8096 of the Home Assistant host; **Open web
+UI** goes there. Home Assistant offers each new version as an update.
+
+To put it on a dashboard, see [Home Assistant](#home-assistant) below.
 
 ## From a BirdWeather station
 

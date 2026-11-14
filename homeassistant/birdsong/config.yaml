@@ -1,0 +1,25 @@
+# Birdsong as a Home Assistant app. Home Assistant pulls the published image,
+# ghcr.io/dopeytree/birdsong:<version>, so `version` must match VERSION at the
+# root of the repository (the build workflow checks this).
+name: Birdsong
+version: "0.42"
+slug: birdsong
+description: The birds your BirdNET-Go station has heard, as a plate of 1800s illustrations
+url: https://github.com/dopeytree/birdsong
+image: ghcr.io/dopeytree/birdsong
+arch:
+  - amd64
+  - aarch64
+init: false
+startup: application
+boot: auto
+ports:
+  80/tcp: 8096
+webui: http://[HOST]:[PORT:80]/
+watchdog: http://[HOST]:[PORT:80]/healthz
+options:
+  birdnet_url: ""
+  birdweather_station: ""
+schema:
+  birdnet_url: str?
+  birdweather_station: str?

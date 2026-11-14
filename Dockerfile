@@ -14,6 +14,7 @@ FROM nginx:alpine
 # BirdNET-Go, e.g. http://192.168.1.50:8080 or http://birdnet-go:8080.
 ENV BIRDNET_URL=""
 COPY nginx/default.conf.template /etc/nginx/templates/default.conf.template
+COPY --chmod=755 nginx/04-ha-options.envsh /docker-entrypoint.d/04-ha-options.envsh
 COPY --chmod=755 nginx/05-birdnet-url.envsh /docker-entrypoint.d/05-birdnet-url.envsh
 COPY html/ /usr/share/nginx/html/
 COPY --from=art /art/ /usr/share/nginx/html/art/

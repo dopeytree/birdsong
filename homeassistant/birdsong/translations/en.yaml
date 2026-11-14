@@ -1,0 +1,13 @@
+configuration:
+  birdnet_url:
+    name: BirdNET-Go address
+    description: >-
+      Your BirdNET-Go as Home Assistant can reach it, for example
+      http://192.168.1.50:8080. Use its IP address, not localhost.
+  birdweather_station:
+    name: BirdWeather station
+    description: >-
+      Instead of BirdNET-Go, draw the plate from a public BirdWeather station:
+      the number at the end of its page, app.birdweather.com/stations/12345.
+network:
+  80/tcp: Birdsong web page
