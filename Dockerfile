@@ -9,7 +9,10 @@ RUN git clone --depth 1 --branch "${FUGLERAMME_REF}" https://github.com/arnegiac
 
 # ---- stage 2: the page, the artwork and a small web server ------------------
 FROM nginx:alpine
-ENV BIRDNET_URL=http://birdnet-go:8080
+# No guess at an address: unset means unset, and the page says so rather than
+# apologising for not reaching a station nobody named. Set it to your
+# BirdNET-Go, e.g. http://192.168.1.50:8080 or http://birdnet-go:8080.
+ENV BIRDNET_URL=""
 COPY nginx/default.conf.template /etc/nginx/templates/default.conf.template
 COPY --chmod=755 nginx/05-birdnet-url.envsh /docker-entrypoint.d/05-birdnet-url.envsh
 COPY html/ /usr/share/nginx/html/

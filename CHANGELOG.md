@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- No station is guessed at. The image used to assume `http://birdnet-go:8080`
+  and the Unraid template filled in an address belonging to nobody, so a fresh
+  install reported that it could not reach a station that had never been named.
+  The page now says there is none yet and shows a sample plate until one is
+  given, here or under Settings.
+
 - Plates can be found for creatures that are not birds. Commons files most
   older work beyond birds by genus or by family rather than by species, and
   under two different spellings of the category, so all of them are tried in
