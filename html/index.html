@@ -647,7 +647,7 @@ const PLATE_PART = [
 const plateKind = t => (PLATE_PART.find(([, re]) => re.test(t)) || [""])[0];
 
 function scoreCandidate(title, sci, common, parts) {
-  const t = title.replace(/^File:/, ""), low = t.toLowerCase(), squashed = low.replace(/[\s_]/g, "");
+  const t = title.replace(/^File:/, ""), low = t.toLowerCase(), squashed = low.replace(/[\s_-]/g, "");
   if (/crossley|\bmap\b|stamp|mural|distribution|taxiderm|\.svg$|\.ogg$|\.pdf$|\.webm$| & /i.test(t)) return -1;
   const kind = plateKind(t);
   if (kind && !parts) return -1;
@@ -670,7 +670,7 @@ function scoreCandidate(title, sci, common, parts) {
   // on the wrong creature is no use here.
   const name = (common || "").toLowerCase().replace(/\s*\/.*$/, "").trim();
   if (squashed.includes(sci.toLowerCase().replace(/\s/g, ""))) s += 50;
-  else if (name && squashed.includes(name.replace(/[\s-]/g, ""))) s += 25;
+  else if (name && squashed.includes(name.replace(/[\s_-]/g, ""))) s += 25;
   if (/ (and|et|und) /i.test(low)) s -= 35;      // two creatures to a page, as a rule
   s = Math.max(s, 0);                            // only the list above throws a plate out
   return kind ? s / 100 : s;                     // a part is offered, never chosen first
