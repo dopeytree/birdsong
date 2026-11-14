@@ -328,6 +328,27 @@ All of this, the last period chosen, and any illustration you pick for a
 bird are remembered per browser, not shared between devices. A card
 address overrides them for that card alone.
 
+## Trying a creature without waiting for one
+
+Waiting for a tawny owl in order to see how a tawny owl looks is a slow way
+to work. `tools/bench.py` stands in for BirdNET-Go: it answers the same
+endpoints from a list of creatures you type in. No packages, nothing saved.
+
+    python3 tools/bench.py
+
+Then open Birdsong against it, instead of your station:
+
+    http://localhost:8095/?server=http://localhost:8099
+
+The bench's own page is at `http://localhost:8099`. Name a creature, press
+*Heard it*, and it appears on the plate. There are buttons for a few to hand
+-- a fox, a badger, a pipistrelle -- and *Look up* will find a scientific name
+from a common one, or the other way round, since Birdsong draws by the
+scientific name. *Reset* empties the list.
+
+The address goes in your browser's bar, so it has to be reachable from the
+browser rather than from inside the container.
+
 ## Build it yourself
 
     docker build -t birdsong .
