@@ -8,6 +8,8 @@
   turn and the credit says when a plate is of a relative rather than the
   animal itself. Jardine's Naturalist's Library, British Quadrupeds and
   A History of British Mammals are recognised, which is where the bats are.
+  Plates already looked up are forgotten once, since both the asking and the
+  ranking have changed.
 - Fixed: a hyphenated name did not match its own plate, so a long-tailed tit
   or a black-headed gull lost the bonus for being named. This was found on
   #16 but landed after it was merged.
