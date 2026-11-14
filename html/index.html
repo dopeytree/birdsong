@@ -702,7 +702,9 @@ const FAMILY = {
 
 async function commonsCategory(cat, sci, common, parts, kin) {
   const wide = kin !== "";   // several species share the answer
-  const u = COMMONS + "/w/api.php?format=json&origin=*&action=query&generator=categorymembers&gcmtype=file&gcmlimit=80&prop=imageinfo&iiprop=url|size|mime&iiurlwidth=500&gcmtitle=" + encodeURIComponent("Category:" + cat);
+  // fifty, not more: asking for a scaled copy of each, MediaWiki sends back at
+  // most fifty in one answer, and a file without one is passed over below
+  const u = COMMONS + "/w/api.php?format=json&origin=*&action=query&generator=categorymembers&gcmtype=file&gcmlimit=50&prop=imageinfo&iiprop=url|size|mime&iiurlwidth=500&gcmtitle=" + encodeURIComponent("Category:" + cat);
   const j = await fetch(u).then(r => r.json());
   return Object.values((j.query && j.query.pages) || {}).map(p => {
     const ii = p.imageinfo && p.imageinfo[0];
