@@ -348,14 +348,24 @@ scientific ones, and a scientific name you type yourself is used as it stands.
 Each row has *again*, to hear it once more just now, and *drop*; *Reset*
 empties the list.
 
-The list to search is gathered at startup: the BirdNET label list if it can be
-fetched, and failing that the hundred and thirty-odd creatures built in, which
-cover a British garden. Point it at a real station to search what that station
-actually knows:
+The list to search is gathered at startup, and the page says how many
+creatures it holds and where they came from. In order:
+
+- a station, if one is named -- the best source, since it knows what your own
+  models have been taught, mammals and bats included;
+- the BirdNET label list, 6,522 creatures, downloaded once and kept in
+  `~/.cache/birdsong-bench/labels.txt`;
+- failing both, the hundred and thirty-odd built in, which cover a British
+  garden.
+
+<!-- -->
 
     python3 tools/bench.py 8099 --birdnet http://192.168.1.50:8080
+    python3 tools/bench.py 8099 --labels ./labels.txt     # a list of your own
 
-The page says how many creatures it is searching, and where they came from.
+A list of your own is one `Scientific name_Common name` to a line, which is
+how BirdNET writes them. If the download fails the bench says which address
+it tried and what went wrong, rather than quietly falling back.
 
 ## Build it yourself
 

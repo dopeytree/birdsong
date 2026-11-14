@@ -13,6 +13,7 @@ Nothing is saved; stop it and the list is gone. Needs no packages.
 """
 
 import json
+import os
 import re
 import sys
 import threading
@@ -30,10 +31,20 @@ LOCK = threading.Lock()
 # order: a BirdNET-Go if one is named on the command line, the published label
 # list if it can be fetched, and failing both, the creatures below.
 LABEL_URLS = [
-    "https://raw.githubusercontent.com/birdnet-team/BirdNET-Analyzer/main/birdnet_analyzer/labels/V2.4/BirdNET_GLOBAL_6K_V2.4_Labels.txt",
+    # BirdNET-Go's own copy, 6,522 classes, "Scientific name_Common name"
+    "https://huggingface.co/tphakala/BirdNET-v2.4/resolve/main/labels.txt",
+    "https://raw.githubusercontent.com/kahst/BirdNET-Analyzer/refs/heads/main/birdnet_analyzer/checkpoints/V2.4/BirdNET_GLOBAL_6K_V2.4_Labels.txt",
+    "https://raw.githubusercontent.com/birdnet-team/BirdNET-Analyzer/main/birdnet_analyzer/labels/V2.4/BirdNET_GLOBAL_6K_V2.4_Labels_en_uk.txt",
     "https://raw.githubusercontent.com/kahst/BirdNET-Analyzer/main/checkpoints/V2.4/BirdNET_GLOBAL_6K_V2.4_Labels.txt",
-    "https://raw.githubusercontent.com/tphakala/birdnet-go/main/internal/birdnet/data/labels/en-uk.txt",
 ]
+
+# somewhere to keep a list once it has been fetched, so it is downloaded once
+CACHE = os.path.join(os.path.expanduser("~"), ".cache", "birdsong-bench", "labels.txt")
+
+# BirdNET-Go may offer the species it knows at one of these; the summary is
+# only what has been heard, so it comes last
+BIRDNET_PATHS = ["/api/v2/species", "/api/v2/range/species",
+                 "/api/v2/analytics/species/summary"]
 
 BUILT_IN = """European Robin|Erithacus rubecula
 Eurasian Blackbird|Turdus merula
@@ -177,41 +188,90 @@ KNOWN = []          # [(common, sci)]
 KNOWN_FROM = "the built-in list"
 
 
-def load_known(birdnet=None):
+def fetch(url, timeout=25):
+    import urllib.request
+    req = urllib.request.Request(url, headers={"User-Agent": "birdsong-bench"})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        return r.read().decode("utf8", "replace")
+
+
+def rows_from_birdnet(base, add):
+    """Whatever this station will tell us about the creatures it knows."""
+    for path in BIRDNET_PATHS:
+        try:
+            data = json.loads(fetch(base.rstrip("/") + path, timeout=10))
+        except Exception:
+            continue
+        rows = data if isinstance(data, list) else (data.get("species") or data.get("data") or [])
+        n = 0
+        for row in rows:
+            if isinstance(row, str):                       # "Sci_Common" or just a name
+                sci, _, common = row.partition("_")
+                add(common, sci)
+            elif isinstance(row, dict):
+                sci = row.get("scientific_name") or row.get("scientificName") or row.get("sci") or ""
+                common = row.get("common_name") or row.get("commonName") or row.get("label") or ""
+                if not sci and "_" in str(row.get("species", "")):
+                    sci, _, common = str(row["species"]).partition("_")
+                add(common, sci)
+            else:
+                continue
+            n += 1
+        if n:
+            return path, n
+    return "", 0
+
+
+def load_known(birdnet=None, labels=None):
     """Gather the creatures that can be searched for."""
     global KNOWN, KNOWN_FROM
     seen, out, where = set(), [], []
 
     def add(common, sci):
-        sci = sci.strip()
+        sci = re.sub(r"\s+", " ", str(sci or "")).strip()
         if sci and sci.lower() not in seen:
             seen.add(sci.lower())
-            out.append((common.strip() or sci, sci))
+            out.append((str(common or "").strip() or sci, sci))
 
     if birdnet:
-        try:
-            import urllib.request
-            u = birdnet.rstrip("/") + "/api/v2/analytics/species/summary"
-            with urllib.request.urlopen(u, timeout=10) as r:
-                for row in json.loads(r.read()):
-                    add(row.get("common_name", ""), row.get("scientific_name", ""))
-            where.append("%d from %s" % (len(out), birdnet))
-        except Exception as e:
-            print("  could not read %s (%s)" % (birdnet, e))
+        path, n = rows_from_birdnet(birdnet, add)
+        if n:
+            where.append("%d from %s%s" % (len(out), birdnet, path))
+        else:
+            print("  %s told us nothing; tried %s" % (birdnet, ", ".join(BIRDNET_PATHS)))
 
-    before = len(out)
-    for url in LABEL_URLS:
+    before, text = len(out), ""
+    if labels:                                             # a file or a URL given by hand
         try:
-            import urllib.request
-            with urllib.request.urlopen(url, timeout=20) as r:
-                for line in r.read().decode("utf8").splitlines():
-                    if "_" in line:
-                        sci, common = line.split("_", 1)
-                        add(common, sci)
-            where.append("%d from the published labels" % (len(out) - before))
-            break
+            text = fetch(labels) if "://" in labels else open(labels, encoding="utf8").read()
+            where.append("from " + labels)
+        except Exception as e:
+            print("  could not read %s (%s)" % (labels, e))
+    if not text:
+        try:
+            text = open(CACHE, encoding="utf8").read()
+            where.append("from the saved copy")
         except Exception:
-            continue
+            for url in LABEL_URLS:
+                try:
+                    text = fetch(url)
+                    where.append("from " + url.split("/")[2])
+                    try:
+                        os.makedirs(os.path.dirname(CACHE), exist_ok=True)
+                        open(CACHE, "w", encoding="utf8").write(text)
+                    except Exception:
+                        pass
+                    break
+                except Exception as e:
+                    print("  %s: %s" % (url.split("/")[2], e))
+    for line in text.splitlines():
+        if "_" in line:
+            sci, common = line.split("_", 1)
+            add(common, sci)
+    if len(out) - before:
+        where[-1] = "%d %s" % (len(out) - before, where[-1])
+    elif where and not where[-1][0].isdigit():
+        where.pop()
 
     before = len(out)
     for line in BUILT_IN.splitlines():
@@ -534,11 +594,11 @@ class Handler(BaseHTTPRequestHandler):
 
 
 if __name__ == "__main__":
-    birdnet = ""
+    opt = {"--birdnet": "", "--labels": ""}
     for i, a in enumerate(sys.argv):
-        if a == "--birdnet" and i + 1 < len(sys.argv):
-            birdnet = sys.argv[i + 1]
+        if a in opt and i + 1 < len(sys.argv):
+            opt[a] = sys.argv[i + 1]
     print("Birdsong bench on http://localhost:%d" % PORT)
-    load_known(birdnet or None)
+    load_known(opt["--birdnet"] or None, opt["--labels"] or None)
     print("Give this address to Birdsong: http://localhost:%d" % PORT)
     ThreadingHTTPServer(("0.0.0.0", PORT), Handler).serve_forever()
