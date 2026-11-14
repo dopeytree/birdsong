@@ -10,6 +10,12 @@
   now BirdNET-Go can hear foxes and badgers as well as birds. Skulls and
   brains join the anatomy already turned away. The red fox has a curated
   plate of its own, drawn by Keulemans.
+- A plate of a part rather than the whole creature -- a skull, a wing, a
+  foot, an egg -- can be offered among the alternatives, under Settings.
+  Off by default, and such a plate is never the one chosen first.
+- Fixed: no waxwing or lapwing could take a plate from Wikimedia Commons.
+  Plates of a wing were turned away by looking for "wing" anywhere in the
+  name, which is also how those two birds are spelt.
 
 - Settings can now switch off the title, date, totals, plate number,
   period buttons, the collage and the index, and cap how many species are
