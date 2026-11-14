@@ -444,6 +444,9 @@ const store = {
   set(k, v) { try { localStorage.setItem("birdplate." + k, JSON.stringify(v)); } catch (e) {} },
   del(k) { try { localStorage.removeItem("birdplate." + k); } catch (e) {} }
 };
+try {   // plates were looked up and ranked differently under cat2
+  for (const k of Object.keys(localStorage)) if (k.startsWith("birdplate.cat2.")) localStorage.removeItem(k);
+} catch (e) {}
 const params = new URLSearchParams(location.search);
 const server = (params.get("server") || store.get("server", "") || CONFIG.server).replace(/\/+$/, "");
 let demo = params.has("demo");
@@ -646,8 +649,8 @@ const PLATE_PART = [
 ];
 const plateKind = t => (PLATE_PART.find(([, re]) => re.test(t)) || [""])[0];
 
-function scoreCandidate(title, sci, common, parts) {
-  const t = title.replace(/^File:/, ""), low = t.toLowerCase(), squashed = low.replace(/[\s_]/g, "");
+function scoreCandidate(title, sci, common, parts, wide) {
+  const t = title.replace(/^File:/, ""), low = t.toLowerCase(), squashed = low.replace(/[\s_-]/g, "");
   if (/crossley|\bmap\b|stamp|mural|distribution|taxiderm|\.svg$|\.ogg$|\.pdf$|\.webm$| & /i.test(t)) return -1;
   const kind = plateKind(t);
   if (kind && !parts) return -1;
@@ -661,6 +664,8 @@ function scoreCandidate(title, sci, common, parts) {
   else if (/gould/i.test(t)) s += 60;
   else if (/lilford|thorburn/i.test(t)) s += 55;
   else if (/audubon/i.test(t)) s += 55;
+  else if (/jardine|naturalist.?s library|british quadrupeds|macgillivray/i.test(t)) s += 60;
+  else if (/british mammals|\bdobson\b|chiroptera/i.test(t)) s += 55;
   else if (/brehm|mivart|lydekker|joseph wolf|harrison weir|royal natural history/i.test(t)) s += 50;  // the same age, drawing animals
   else if (/wellcome|engraving|lithograph/i.test(t)) s += 40;
   else if (/zwarts/i.test(t)) s += 30;
@@ -669,28 +674,63 @@ function scoreCandidate(title, sci, common, parts) {
   // Which animal the plate is of matters more than who drew it: a famous hand
   // on the wrong creature is no use here.
   const name = (common || "").toLowerCase().replace(/\s*\/.*$/, "").trim();
-  if (squashed.includes(sci.toLowerCase().replace(/\s/g, ""))) s += 50;
-  else if (name && squashed.includes(name.replace(/[\s-]/g, ""))) s += 25;
+  const genus = sci.split(/\s+/)[0].toLowerCase();
+  if (squashed.includes(sci.toLowerCase().replace(/\s/g, ""))) s += wide ? 150 : 50;
+  else if (name && squashed.includes(name.replace(/[\s_-]/g, ""))) s += wide ? 120 : 25;
+  else if (wide && genus.length > 5 && low.includes(genus.slice(0, 6))) s += 40;
   if (/ (and|et|und) /i.test(low)) s -= 35;      // two creatures to a page, as a rule
   s = Math.max(s, 0);                            // only the list above throws a plate out
   return kind ? s / 100 : s;                     // a part is offered, never chosen first
 }
 
+/* Commons files the plates of a species under its own name, but much of the
+   older work beyond birds is gathered by genus or by family instead -- a
+   pipistrelle's plates sit with the rest of the Vespertilionidae. This is the
+   way back up to them. Birds are almost always found at the first ask. */
+const FAMILY = {
+  Pipistrellus: "Vespertilionidae", Myotis: "Vespertilionidae", Nyctalus: "Vespertilionidae",
+  Plecotus: "Vespertilionidae", Eptesicus: "Vespertilionidae", Barbastella: "Vespertilionidae",
+  Rhinolophus: "Rhinolophidae",
+  Vulpes: "Canidae", Canis: "Canidae",
+  Meles: "Mustelidae", Martes: "Mustelidae", Mustela: "Mustelidae", Lutra: "Mustelidae",
+  Erinaceus: "Erinaceidae", Talpa: "Talpidae", Sorex: "Soricidae",
+  Sciurus: "Sciuridae", Oryctolagus: "Leporidae", Lepus: "Leporidae",
+  Capreolus: "Cervidae", Cervus: "Cervidae", Dama: "Cervidae", Muntiacus: "Cervidae",
+  Apodemus: "Muridae", Rattus: "Muridae", Microtus: "Cricetidae",
+  Rana: "Ranidae", Bufo: "Bufonidae", Pelophylax: "Ranidae"
+};
+
+async function commonsCategory(cat, sci, common, parts, kin) {
+  const wide = kin !== "";   // several species share the answer
+  // fifty, not more: asking for a scaled copy of each, MediaWiki sends back at
+  // most fifty in one answer, and a file without one is passed over below
+  const u = COMMONS + "/w/api.php?format=json&origin=*&action=query&generator=categorymembers&gcmtype=file&gcmlimit=50&prop=imageinfo&iiprop=url|size|mime&iiurlwidth=500&gcmtitle=" + encodeURIComponent("Category:" + cat);
+  const j = await fetch(u).then(r => r.json());
+  return Object.values((j.query && j.query.pages) || {}).map(p => {
+    const ii = p.imageinfo && p.imageinfo[0];
+    if (!ii || !/^image\/(jpeg|png|tiff)$/.test(ii.mime) || ii.width < 400 || !ii.thumburl) return null;
+    const score = scoreCandidate(p.title, sci, common, parts, wide);
+    return score < 0 ? null : { score, file: p.title.replace(/^File:/, ""), src: ii.thumburl, large: ii.thumburl, page: ii.descriptionurl,
+      credit: p.title.replace(/^File:/, "").replace(/\.\w+$/, "").replace(/\s*\(\d{6,}\)/, "") + ". Wikimedia Commons." + kin };
+  }).filter(Boolean).sort((a, b) => b.score - a.score).slice(0, 12);
+}
+
 async function commonsPlates(sci, common) {
-  const parts = store.get("parts", false), key = "cat2." + (parts ? "p." : "") + sci;
+  const parts = store.get("parts", false), key = "cat3." + (parts ? "p." : "") + sci;
   const cached = store.get(key);
   if (cached && Date.now() - cached.t < 30 * 864e5) return cached.v;
+  const genus = sci.split(/\s+/)[0], family = FAMILY[genus] || "";
+  const asked = [[sci, ""], [genus, " A plate of the same genus."]];
+  if (family) asked.push([family, " A plate of the same family."]);
   let v = [];
   try {
-    const u = COMMONS + "/w/api.php?format=json&origin=*&action=query&generator=categorymembers&gcmtype=file&gcmlimit=80&prop=imageinfo&iiprop=url|size|mime&iiurlwidth=500&gcmtitle=" + encodeURIComponent("Category:" + sci + " (illustrations)");
-    const j = await fetch(u).then(r => r.json());
-    v = Object.values((j.query && j.query.pages) || {}).map(p => {
-      const ii = p.imageinfo && p.imageinfo[0];
-      if (!ii || !/^image\/(jpeg|png|tiff)$/.test(ii.mime) || ii.width < 400 || !ii.thumburl) return null;
-      const score = scoreCandidate(p.title, sci, common, parts);
-      return score < 0 ? null : { score, file: p.title.replace(/^File:/, ""), src: ii.thumburl, large: ii.thumburl, page: ii.descriptionurl,
-        credit: p.title.replace(/^File:/, "").replace(/\.\w+$/, "").replace(/\s*\(\d{6,}\)/, "") + ". Wikimedia Commons." };
-    }).filter(Boolean).sort((a, b) => b.score - a.score).slice(0, 12);
+    for (const [name, kin] of asked) {
+      for (const cat of [name + " (illustrations)", name + " illustrations"]) {
+        v = await commonsCategory(cat, sci, common, parts, kin);
+        if (v.length) break;
+      }
+      if (v.length) break;
+    }
     store.set(key, { t: Date.now(), v });
   } catch (e) { /* offline or blocked: fall through to whatever else we have */ }
   return v;
