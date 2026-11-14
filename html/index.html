@@ -629,11 +629,12 @@ function sample() {
    =================================================================== */
 function kbPlates(sci) { return [...(CURATED[sci] || []), ...(KB[sci] || KB[SYNONYM[sci]] || [])]; }
 
-function scoreCandidate(title, sci) {
+function scoreCandidate(title, sci, common) {
   const t = title.replace(/^File:/, ""), low = t.toLowerCase(), squashed = low.replace(/[\s_]/g, "");
   if (/crossley|\bmap\b|eggs?\b|\bnest|wing|skull|skelet|\bhead\b|\bkop\b|stamp|mural|distribution|\.svg$|\.ogg$|\.pdf$|\.webm$| & /i.test(t)) return -1;
   let s = 0;
-  if (/albin|selby|frivald|bewick|edwards|donovan|lewin|martinet|buffon|natural history of birds|nederlandsche vogelen/i.test(t)) s += 100;  // figures on plain paper
+  if (/albin|selby|frivald|bewick|edwards|donovan|lewin|martinet|natural history of birds|nederlandsche vogelen/i.test(t)) s += 100;  // figures on plain paper
+  else if (/buffon/i.test(t)) s += /oiseaux|birds/i.test(t) ? 100 : 55;  // he ran to mammals too, on busier pages
   else if (/keulemans onze vogels/i.test(t)) s += 90;
   else if (/keulemans/i.test(t)) s += 80;
   else if (/naumann/i.test(t)) s += 75;
@@ -641,14 +642,21 @@ function scoreCandidate(title, sci) {
   else if (/gould/i.test(t)) s += 60;
   else if (/lilford|thorburn/i.test(t)) s += 55;
   else if (/audubon/i.test(t)) s += 55;
+  else if (/brehm|mivart|lydekker|joseph wolf|harrison weir|royal natural history/i.test(t)) s += 50;  // the same age, drawing animals
   else if (/wellcome|engraving|lithograph/i.test(t)) s += 40;
   else if (/zwarts/i.test(t)) s += 30;
   else if (/iconographia zoologica/i.test(t)) s += 20;
-  if (squashed.includes(sci.toLowerCase().replace(/\s/g, ""))) s += 50;
-  return s;
+
+  // Which animal the plate is of matters more than who drew it: a famous hand
+  // on the wrong creature is no use here.
+  const name = (common || "").toLowerCase().replace(/\s*\/.*$/, "").trim();
+  if (squashed.includes(sci.toLowerCase().replace(/\s/g, ""))) s += 150;
+  else if (name && squashed.includes(name.replace(/[\s-]/g, ""))) s += 120;
+  if (/ (and|et|und) /i.test(low)) s -= 35;      // two creatures to a page, as a rule
+  return Math.max(s, 0);                         // only the list above throws a plate out
 }
 
-async function commonsPlates(sci) {
+async function commonsPlates(sci, common) {
   const cached = store.get("cat2." + sci);
   if (cached && Date.now() - cached.t < 30 * 864e5) return cached.v;
   let v = [];
@@ -658,7 +666,7 @@ async function commonsPlates(sci) {
     v = Object.values((j.query && j.query.pages) || {}).map(p => {
       const ii = p.imageinfo && p.imageinfo[0];
       if (!ii || !/^image\/(jpeg|png|tiff)$/.test(ii.mime) || ii.width < 400 || !ii.thumburl) return null;
-      const score = scoreCandidate(p.title, sci);
+      const score = scoreCandidate(p.title, sci, common);
       return score < 0 ? null : { score, file: p.title.replace(/^File:/, ""), src: ii.thumburl, large: ii.thumburl, page: ii.descriptionurl,
         credit: p.title.replace(/^File:/, "").replace(/\.\w+$/, "").replace(/\s*\(\d{6,}\)/, "") + ". Wikimedia Commons." };
     }).filter(Boolean).sort((a, b) => b.score - a.score).slice(0, 12);
@@ -674,7 +682,7 @@ async function choosePlates(sp) {
   const fr = frPlates(sp.sci), kb = kbPlates(sp.sci);
   if (fr.length) return [fr[0], ...kb.slice(0, 1)];
   if (kb.length) return [kb[0]];
-  const c = await commonsPlates(sp.sci);
+  const c = await commonsPlates(sp.sci, sp.common);
   if (c.length) return c.slice(0, 6);
   if (sp.thumb) return [{ src: sp.thumb, large: sp.thumb, photo: true, credit: "No engraved plate found. Photograph supplied by " + SOURCE.name + "." }];
   return [];
@@ -1033,7 +1041,7 @@ async function openDetail(sp) {
   $("#alts").replaceChildren(); $("#altLabel").style.display = "none";
   if (!detail.open) detail.showModal();
   loadBlurb(sp);
-  const alts = [...frPlates(sp.sci), ...kbPlates(sp.sci), ...(await commonsPlates(sp.sci))];
+  const alts = [...frPlates(sp.sci), ...kbPlates(sp.sci), ...(await commonsPlates(sp.sci, sp.common))];
   if ($("#dSci").textContent !== sp.sci || alts.length < 2 && !(alts.length === 1 && (!plate || plate.src !== alts[0].src))) return;
   $("#altLabel").style.display = "";
   $("#alts").replaceChildren(...alts.map(a => {

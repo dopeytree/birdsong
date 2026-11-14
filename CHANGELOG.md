@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- A plate found on Wikimedia Commons is now ranked by which animal it shows
+  before who drew it. Naming the species counts for more than any hand, so a
+  famous plate of the wrong creature no longer wins. Buffon's mammal volumes
+  are separated from his birds, plates holding two animals are marked down,
+  and a few of the age's animal illustrators are recognised, which matters
+  now BirdNET-Go can hear foxes and badgers as well as birds.
+
 - Settings can now switch off the title, date, totals, plate number,
   period buttons, the collage and the index, and cap how many species are
   shown.
