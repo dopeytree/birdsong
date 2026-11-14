@@ -524,13 +524,15 @@ function when(s) {
    as source.json). A BirdNET-Go address set in this browser beats the
    container's station; a station set in this browser beats everything.
    =================================================================== */
-const SOURCE = { bw: "", endpoint: "https://app.birdweather.com/graphql", name: "BirdNET-Go" };
+const SOURCE = { bw: "", endpoint: "https://app.birdweather.com/graphql", name: "BirdNET-Go", set: true };
 async function loadSource() {
   const digits = v => String(v || "").replace(/\D/g, "");
   let srv = {};
   try { const r = await fetch("source.json", { cache: "no-store" }); if (r.ok) srv = await r.json(); } catch (e) {}
   SOURCE.bw = digits(params.get("station")) || digits(store.get("station", "")) || (server ? "" : digits(srv.birdweatherStation));
   if (srv.proxy) SOURCE.endpoint = "graphql";   // the container forwards to BirdWeather: one address, no cross-site requests
+  // nothing here, nothing stored, nothing in the container: nobody has said yet
+  SOURCE.set = !!(SOURCE.bw || params.get("server") || store.get("server", "") || srv.birdnet !== false);
   if (SOURCE.bw) SOURCE.name = "BirdWeather";
   $("#srcName").textContent = SOURCE.name;
 }
@@ -1052,10 +1054,13 @@ async function refresh(initial) {
     catch (e) {
       if (!initial && species.length) { busy = false; return; }   // keep what we have through a hiccup
       demo = true; rows = sample(1);
-      const msg = !(e instanceof TypeError) ? e.message
+      const msg = !SOURCE.set ? "No station yet."
+        : !(e instanceof TypeError) ? e.message
         : SOURCE.bw ? "BirdWeather could not be reached" + (SOURCE.endpoint === "graphql" ? " through this page's address" : "") + "."
         : "BirdNET-Go could not be reached" + (server ? " at " + server : " through this page's address") + ".";
-      $("#notice").innerHTML = esc(msg) + " Showing a sample plate instead. <button id='fix'>Open station settings</button>";
+      $("#notice").innerHTML = esc(msg)
+        + (SOURCE.set ? " Showing a sample plate instead. " : " This is a sample plate; name a station to see your own birds. ")
+        + "<button id='fix'>Open station settings</button>";
       $("#fix").addEventListener("click", () => openSettings());
     }
     const sig = period + "|" + rows.map(s => s.sci + ":" + s.count).join(",");

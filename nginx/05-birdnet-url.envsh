@@ -7,6 +7,17 @@ export BIRDNET_URL="${BIRDNET_URL%/}"
 # https://app.birdweather.com/stations/<number>. When it is set, the page reads
 # that station's detections from BirdWeather instead of BirdNET-Go, and nginx
 # forwards /graphql to BirdWeather so the page and its data keep one address.
+# Was a BirdNET-Go named at all? Anything non-empty counts, including a
+# compose service name; only an empty setting means nobody has said yet.
+if [ -n "${BIRDNET_URL:-}" ]; then
+  named=true
+else
+  named=false
+  # nginx will not start on an empty proxy_pass, and an address nobody gave
+  # should refuse at once rather than hang: port 9 discards.
+  export BIRDNET_URL="http://127.0.0.1:9"
+fi
+
 EXTRA=/etc/nginx/birdsong.d
 mkdir -p "$EXTRA"
 rm -f "$EXTRA"/*.conf
@@ -48,7 +59,7 @@ location = /graphql {
 }
 EOF
   fi
-  printf '{"birdweatherStation":"%s","proxy":%s}\n' "$station" "$proxy" > "$EXTRA/source.json"
+  printf '{"birdweatherStation":"%s","proxy":%s,"birdnet":%s}\n' "$station" "$proxy" "$named" > "$EXTRA/source.json"
 
   # The page no longer needs BirdNET-Go, but nginx still refuses to start if the
   # unused /api upstream can't be resolved, so point the image's default at a
@@ -57,5 +68,5 @@ EOF
     export BIRDNET_URL="http://127.0.0.1:9"
   fi
 else
-  printf '{}\n' > "$EXTRA/source.json"
+  printf '{"birdnet":%s}\n' "$named" > "$EXTRA/source.json"
 fi

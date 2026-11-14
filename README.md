@@ -78,8 +78,9 @@ Birdsong is in Community Applications. Open the **Apps** tab, search for
 *birdsong*, and install it. The template sets the port, the data folder
 and the icon; the one thing to fill in is **BirdNET-Go address**, which
 is your BirdNET-Go as the server sees it, such as
-`http://192.168.1.50:8080`. Leave it empty and fill in **BirdWeather
-station** instead to draw the plate from a public station.
+`http://192.168.1.50:8080`. Fill in **BirdWeather station** instead to
+draw the plate from a public station. Leave both empty and Birdsong
+shows a sample plate until you name one, from the page's own Settings.
 
 The template also maps a **data folder** at `/data`, used only if you
 switch on Unraid's per-container Tailscale, which keeps its state there.
