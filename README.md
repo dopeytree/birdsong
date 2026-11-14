@@ -334,7 +334,24 @@ Waiting for a tawny owl in order to see how a tawny owl looks is a slow way
 to work. `tools/bench.py` stands in for BirdNET-Go: it answers the same
 endpoints from a list of creatures you type in. No packages, nothing saved.
 
-    python3 tools/bench.py
+    docker build -t birdsong-bench tools/
+    docker run -d --name birdsong-bench -p 8099:8099 birdsong-bench
+
+or, without Docker, `python3 tools/bench.py`.
+
+In a compose file beside BirdNET-Go, where it can ask the station what
+creatures it knows:
+
+    bench:
+      build: https://github.com/dopeytree/birdsong.git#main:tools
+      container_name: birdsong-bench
+      ports:
+        - "8099:8099"
+      environment:
+        - BENCH_ARGS=--birdnet http://birdnet-go:8080
+
+The container carries the whole species list, fetched when it was built, so it
+asks nothing of the network when it runs and needs no Python of your own.
 
 Its page is at `http://localhost:8099`, and that address is what you give
 Birdsong: put it under **BirdNET-Go address** in Birdsong's own settings, or
