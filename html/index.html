@@ -394,6 +394,9 @@ const CURATED_RAW = {
     ["TurturStoliczkaeKeulemans.jpg", "J. G. Keulemans, 19th century."],
     ["Turtle dove Albin.jpg", "Eleazar Albin, A Natural History of Birds, 1731–38."]
   ],
+  "Vulpes vulpes": [
+    ["Keulemans common fox.png", "J. G. Keulemans, for St George Mivart's Dogs, Jackals, Wolves and Foxes, 1890."]
+  ],
   "Cygnus olor": [
     ["A natural history of birds - illustrated with a hundred and one copper plates, curiously engraven from the life (1731) (14563733179).jpg", "Eleazar Albin, A Natural History of Birds, 1731."]
   ]
@@ -631,7 +634,7 @@ function kbPlates(sci) { return [...(CURATED[sci] || []), ...(KB[sci] || KB[SYNO
 
 function scoreCandidate(title, sci, common) {
   const t = title.replace(/^File:/, ""), low = t.toLowerCase(), squashed = low.replace(/[\s_]/g, "");
-  if (/crossley|\bmap\b|eggs?\b|\bnest|wing|skull|skelet|\bhead\b|\bkop\b|stamp|mural|distribution|\.svg$|\.ogg$|\.pdf$|\.webm$| & /i.test(t)) return -1;
+  if (/crossley|\bmap\b|eggs?\b|\bnest|wing|skull|skelet|brain|teeth|dentition|anatom|viscera|taxiderm|\bhead\b|\bkop\b|stamp|mural|distribution|\.svg$|\.ogg$|\.pdf$|\.webm$| & /i.test(t)) return -1;
   let s = 0;
   if (/albin|selby|frivald|bewick|edwards|donovan|lewin|martinet|natural history of birds|nederlandsche vogelen/i.test(t)) s += 100;  // figures on plain paper
   else if (/buffon/i.test(t)) s += /oiseaux|birds/i.test(t) ? 100 : 55;  // he ran to mammals too, on busier pages
@@ -650,8 +653,8 @@ function scoreCandidate(title, sci, common) {
   // Which animal the plate is of matters more than who drew it: a famous hand
   // on the wrong creature is no use here.
   const name = (common || "").toLowerCase().replace(/\s*\/.*$/, "").trim();
-  if (squashed.includes(sci.toLowerCase().replace(/\s/g, ""))) s += 150;
-  else if (name && squashed.includes(name.replace(/[\s-]/g, ""))) s += 120;
+  if (squashed.includes(sci.toLowerCase().replace(/\s/g, ""))) s += 50;
+  else if (name && squashed.includes(name.replace(/[\s-]/g, ""))) s += 25;
   if (/ (and|et|und) /i.test(low)) s -= 35;      // two creatures to a page, as a rule
   return Math.max(s, 0);                         // only the list above throws a plate out
 }

@@ -7,7 +7,9 @@
   famous plate of the wrong creature no longer wins. Buffon's mammal volumes
   are separated from his birds, plates holding two animals are marked down,
   and a few of the age's animal illustrators are recognised, which matters
-  now BirdNET-Go can hear foxes and badgers as well as birds.
+  now BirdNET-Go can hear foxes and badgers as well as birds. Skulls and
+  brains join the anatomy already turned away. The red fox has a curated
+  plate of its own, drawn by Keulemans.
 
 - Settings can now switch off the title, date, totals, plate number,
   period buttons, the collage and the index, and cap how many species are
