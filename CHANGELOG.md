@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- The Unraid template is kept in the templates repository alone, where the app
+  store reads it, rather than in two places that had drifted apart.
+
 - A plate found on Wikimedia Commons is now ranked by which animal it shows
   before who drew it. Naming the species counts for more than any hand, so a
   famous plate of the wrong creature no longer wins. Buffon's mammal volumes

@@ -93,7 +93,12 @@ then go to the Docker tab, Add Container, and choose `birdsong` under
 Template:
 
     wget -O /boot/config/plugins/dockerMan/templates-user/my-birdsong.xml \
-      https://raw.githubusercontent.com/dopeytree/birdsong/main/unraid/birdsong.xml
+      https://raw.githubusercontent.com/dopeytree/Unraid-templates/main/templates/birdsong.xml
+
+The template lives in
+[dopeytree/Unraid-templates](https://github.com/dopeytree/Unraid-templates/blob/main/templates/birdsong.xml),
+which is the folder the app store reads; it is kept there alone, so there is
+one of it rather than two drifting apart.
 
 Community Applications refreshes its templates roughly every two hours,
 so a new release takes a little while to show up in the Apps tab.
