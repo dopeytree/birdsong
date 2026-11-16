@@ -75,9 +75,20 @@ body.no-mark .bird.newest::after{display:none}
 .bird:hover>*,.bird:focus-visible>*{transform:scale(1.06)}
 .bird>img{object-fit:contain}
 .bird>span{display:grid;place-items:center;text-align:center;font-style:italic;font-size:clamp(.6rem,1.1vw,.9rem);line-height:1.15;color:var(--sepia);border:1px solid var(--rule);border-radius:50%;padding:.2em .6em}
-#status{position:absolute;inset:0;display:grid;place-items:center;text-align:center;font-style:italic;color:var(--sepia);font-size:1.15rem;padding:2rem;pointer-events:none}
-#status:empty{display:none}
+#status{position:absolute;inset:0;display:grid;place-items:center;align-content:center;gap:.9rem;text-align:center;font-style:italic;color:var(--sepia);font-size:1.15rem;padding:2rem;pointer-events:none}
+#status.idle{display:none}
 #status button{pointer-events:auto;text-decoration:underline;text-underline-offset:3px;font-style:italic}
+/* While the plates are being gathered: a hairline rule that fills as each one
+   arrives, with a slow sheen travelling along it so a long wait on a slow
+   lookup does not look like a page that has given up. */
+#load{display:block;position:relative;width:min(13rem,52vw);height:2px;background:var(--rule);overflow:hidden}
+#load[hidden]{display:none}
+#load i{position:absolute;inset:0;background:var(--madder);transform:scaleX(var(--p,0));transform-origin:left;transition:transform .45s ease-out}
+#load::after{content:"";position:absolute;top:0;bottom:0;width:34%;left:-34%;
+  background:linear-gradient(90deg,transparent,rgba(140,59,42,.5),transparent);   /* madder, half strength */
+  animation:along 1.6s linear infinite}
+@keyframes along{to{left:100%}}
+@media (prefers-reduced-motion:reduce){#load::after{animation:none}}
 
 #tip{position:fixed;z-index:20;pointer-events:none;background:var(--paper);border:1px solid var(--rule);box-shadow:0 0 0 3px var(--paper),0 0 0 4px var(--rule),0 6px 18px rgba(60,40,10,.18);padding:.45rem .8rem .5rem;text-align:center;line-height:1.25;opacity:0;transition:opacity .12s;max-width:16rem}
 #tip.on{opacity:1}
@@ -259,7 +270,7 @@ dd.big{color:var(--madder);font-size:1.3rem;line-height:1.2}
       <p id="latestWhen"></p>
     </div>
   </div>
-  <div id="plate"><div id="status">Preparing the plate…</div></div>
+  <div id="plate"><div id="status"><span id="statusText">Preparing the plate…</span><span id="load" aria-hidden="true"><i></i></span></div></div>
   <p id="caption">Each bird is drawn in proportion to how often it was heard. Select one to see its plate and its hours.</p>
   <section>
     <h2>Index of species</h2>
@@ -489,7 +500,18 @@ try {   // plates were looked up and ranked differently under cat2
 } catch (e) {}
 const params = new URLSearchParams(location.search);
 const server = (params.get("server") || store.get("server", "") || CONFIG.server).replace(/\/+$/, "");
-let demo = params.has("demo");
+/* Two different things called the same: the sample plate asked for (?demo),
+   which is what the page is for until a station is named, and the sample plate
+   fallen back on because the station did not answer, which must give way the
+   moment it does. Only the first stops the page asking. */
+const forcedDemo = params.has("demo");
+let demo = forcedDemo;
+// fetch, with a limit on how long we hold the question open
+function askFor(url, opts, ms) {
+  if (!ms || !self.AbortController) return fetch(url, opts);
+  const c = new AbortController(), t = setTimeout(() => c.abort(), ms);
+  return fetch(url, { ...opts, signal: c.signal }).finally(() => clearTimeout(t));
+}
 const demoPlate = (params.get("demo") || "") === "2" ? 2 : 1;   // ?demo, or ?demo=2
 
 /* What this page shows. The settings panel sets the defaults for this browser;
@@ -610,15 +632,18 @@ const PERIODS = ["today", "week", "month", "all"];
 const urlPeriod = (params.get("period") || "").toLowerCase();
 let period = PERIODS.includes(urlPeriod) ? urlPeriod : store.get("period", "week");
 
-async function fetchSpecies() {
-  if (demo) return sample(demoPlate);
-  if (SOURCE.bw) return fetchSpeciesBW();
+/* ms: how long to hold the question open. An address with nothing behind it
+   never answers and never refuses, so without this the page waits out the
+   browser's own timeout -- a quarter of a minute of nothing. */
+async function fetchSpecies(ms) {
+  if (forcedDemo) return sample(demoPlate);
+  if (SOURCE.bw) return fetchSpeciesBW(ms);
   let path;
   const day = ymd(new Date());
   if (period === "today") path = "/api/v2/analytics/species/daily?date=" + day;
   else if (period === "all") path = "/api/v2/analytics/species/summary";
   else path = "/api/v2/analytics/species/summary?start_date=" + ymd(daysAgo(period === "week" ? 6 : 29)) + "&end_date=" + day;
-  const r = await fetch(server + path, { headers: { Accept: "application/json" } });
+  const r = await askFor(server + path, { headers: { Accept: "application/json" } }, ms);
   if (r.status === 401 || r.status === 403) throw new Error("BirdNET-Go asked for a sign-in. Allow this page's address under its security settings, or turn off private mode.");
   if (!r.ok) throw new Error("BirdNET-Go answered with error " + r.status + ".");
   const j = await r.json();
@@ -643,8 +668,8 @@ async function fetchSpecies() {
    =================================================================== */
 const BW = { checked: false, since: "", tz: "" };
 
-async function gql(query, variables) {
-  const r = await fetch(SOURCE.endpoint, { method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify({ query, variables }) });
+async function gql(query, variables, ms) {
+  const r = await askFor(SOURCE.endpoint, { method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify({ query, variables }) }, ms);
   if (!r.ok) throw new Error("BirdWeather answered with error " + r.status + ".");
   const j = await r.json();
   if (j.errors && j.errors.length) throw new Error("BirdWeather station " + SOURCE.bw + " could not be read (" + (j.errors[0].message || "query refused") + "). Check the station number, and that the station is public.");
@@ -673,14 +698,14 @@ function bwLocal(key) {
   return { day: ymd(t), hour: t.getHours() };
 }
 
-async function fetchSpeciesBW() {
+async function fetchSpeciesBW(ms) {
   if (!BW.checked) {   // once: confirms the station exists and is public, and finds when its records begin
-    const d = await gql("query($id:ID!){station(id:$id){earliestDetectionAt timezone}}", { id: SOURCE.bw });
+    const d = await gql("query($id:ID!){station(id:$id){earliestDetectionAt timezone}}", { id: SOURCE.bw }, ms);
     if (!d.station) throw new Error("BirdWeather has no public station " + SOURCE.bw + ".");
     BW.since = bwDate(d.station.earliestDetectionAt); BW.tz = d.station.timezone || ""; BW.checked = true;
   }
   const d = await gql("query($ids:[ID!],$p:InputDuration){topSpecies(stationIds:$ids,period:$p,limit:500){count speciesId species{commonName scientificName thumbnailUrl}}}",
-    { ids: [SOURCE.bw], p: bwPeriod(period) });
+    { ids: [SOURCE.bw], p: bwPeriod(period) }, ms);
   return (d.topSpecies || []).map(o => {
     const s = o.species || {};
     return { sci: s.scientificName || "", common: s.commonName || s.scientificName || "Unnamed", count: Number(o.count || 0), bwId: o.speciesId,
@@ -974,6 +999,15 @@ async function makeFigure(sp, plates) {
    Arranging the plate
    =================================================================== */
 const plateEl = $("#plate"), statusEl = $("#status"), tip = $("#tip");
+const statusText = $("#statusText"), loadBar = $("#load");
+/* What the middle of the empty plate says. `at` is how far along the gathering
+   is, 0 to 1, or left out when there is nothing to wait for. */
+function setStatus(html, at) {
+  statusEl.classList.toggle("idle", !html);
+  statusText.innerHTML = html || "";
+  loadBar.hidden = at == null;
+  if (at != null) loadBar.style.setProperty("--p", Math.max(0, Math.min(1, at)));
+}
 const figures = new Map();   // sci -> { button, aspect, plate, plateKey }
 let species = [], firstReveal = true;
 
@@ -1131,42 +1165,56 @@ function sizeIndex() {
 }
 
 let busy = false, lastSig = "";
+const wait = ms => new Promise(r => setTimeout(r, ms));
+/* An address with nothing behind it does not refuse the connection: it holds it
+   open while the browser waits out its own timeout, a quarter of a minute of
+   blank page. So the sample plate goes up after PATIENCE, and the asking goes
+   on underneath; whichever the station does next, answer or fail, lands on top. */
+const PATIENCE = 2000;
+/* And when to stop holding the question open at all. Generous on purpose: the
+   sample plate is already up, so nothing is waiting on this, and a station that
+   takes its time over a wide period must not be mistaken for one that is not
+   there. Under the minute between asks, so the questions cannot pile up. */
+const ASK_LIMIT = 45000;
+
+function noStation(e) {
+  const msg = !SOURCE.set ? "No station yet."
+    : e && e.name === "AbortError" ? SOURCE.name + " did not answer" + (server ? " at " + server : "") + "."
+    : !(e instanceof TypeError) ? e.message
+    : SOURCE.bw ? "BirdWeather could not be reached" + (SOURCE.endpoint === "graphql" ? " through this page's address" : "") + "."
+    : "BirdNET-Go could not be reached" + (server ? " at " + server : " through this page's address") + ".";
+  $("#notice").innerHTML = esc(msg)
+    + (SOURCE.set ? " Showing a sample plate instead. " : " This is a sample plate; name a station to see your own birds. ")
+    + "<button id='fix'>Open station settings</button>";
+  $("#fix").addEventListener("click", () => openSettings());
+}
+
 async function refresh(initial) {
   if (busy) return; busy = true;
   try {
     let rows;
-    try { rows = await fetchSpecies(); $("#notice").textContent = demo ? "This is a sample plate, not your station." : ""; }
+    try {
+      const ask = fetchSpecies(ASK_LIMIT);
+      if (!species.length && !forcedDemo) {
+        const answered = await Promise.race([ask.then(r => ({ r })), wait(PATIENCE)]);
+        if (!answered) {   // nothing yet: something to look at, and the asking continues
+          $("#notice").innerHTML = esc("Waiting on " + SOURCE.name + (server ? " at " + server : "") + ".")
+            + " Showing a sample plate meanwhile. <button id='fix'>Open station settings</button>";
+          $("#fix").addEventListener("click", () => openSettings());
+          demo = true;            // so a card opened meanwhile knows these birds are invented
+          await draw(sample(1));
+        }
+      }
+      rows = await ask;
+      demo = forcedDemo;   // a station that has come back is no longer a sample
+      $("#notice").textContent = demo ? "This is a sample plate, not your station." : "";
+    }
     catch (e) {
-      if (!initial && species.length) { busy = false; return; }   // keep what we have through a hiccup
+      if (!initial && species.length && !demo) { busy = false; return; }   // keep what we have through a hiccup
       demo = true; rows = sample(1);
-      const msg = !SOURCE.set ? "No station yet."
-        : !(e instanceof TypeError) ? e.message
-        : SOURCE.bw ? "BirdWeather could not be reached" + (SOURCE.endpoint === "graphql" ? " through this page's address" : "") + "."
-        : "BirdNET-Go could not be reached" + (server ? " at " + server : " through this page's address") + ".";
-      $("#notice").innerHTML = esc(msg)
-        + (SOURCE.set ? " Showing a sample plate instead. " : " This is a sample plate; name a station to see your own birds. ")
-        + "<button id='fix'>Open station settings</button>";
-      $("#fix").addEventListener("click", () => openSettings());
+      noStation(e);
     }
-    // the last-heard time counts as a change: the dot, the index's red name and
-    // sizing by time all read it, so a plate can need redrawing on a stamp alone
-    const sig = period + "|" + rows.map(s => s.sci + ":" + s.count + ":" + s.last).join(",");
-    species = rows;
-    if (sig === lastSig) { busy = false; return; }
-    lastSig = sig;
-    renderHeading();
-    if (!rows.length) {
-      for (const [, f] of figures) f.button.remove();
-      statusEl.innerHTML = period === "today" ? "Nothing heard yet today. The plate fills in as birds call. <button id='wk'>Look at the last seven days</button>" : "No detections in this period.";
-      const wk = $("#wk"); if (wk) wk.addEventListener("click", () => setPeriod("week"));
-      renderIndex(); busy = false; return;
-    }
-    const top = opt.plate ? plateList() : [], missing = top.filter(s => !figures.has(s.sci));
-    let done = 0;
-    if (missing.length > 3) statusEl.textContent = "Preparing the plate…";
-    await pool(top, 6, async sp => { await ensureFigure(sp); if (missing.length > 3 && !figures.get(sp.sci).button.isConnected) statusEl.textContent = "Preparing the plate… " + (++done) + " of " + missing.length; });
-    statusEl.textContent = "";
-    renderIndex(); layout(); renderLatest();
+    await draw(rows);
   } finally { busy = false; drainRedraw(); }
 }
 
@@ -1189,9 +1237,37 @@ function drainRedraw() {
   redrawWanted = false; redrawPlate();
 }
 
+// Everything the page does with a set of rows, whether they came from the
+// station or from the sample.
+async function draw(rows) {
+  // the last-heard time counts as a change: the dot, the index's red name and
+  // sizing by time all read it, so a plate can need redrawing on a stamp alone
+  const sig = period + "|" + rows.map(s => s.sci + ":" + s.count + ":" + s.last).join(",");
+  species = rows;
+  if (sig === lastSig) return;
+  lastSig = sig;
+  renderHeading();
+  if (!rows.length) {
+    for (const [, f] of figures) f.button.remove();
+    setStatus(period === "today" ? "Nothing heard yet today. The plate fills in as birds call. <button id='wk'>Look at the last seven days</button>" : "No detections in this period.");
+    const wk = $("#wk"); if (wk) wk.addEventListener("click", () => setPeriod("week"));
+    renderIndex(); return;
+  }
+  const top = opt.plate ? plateList() : [], missing = top.filter(s => !figures.has(s.sci));
+  let done = 0;
+  const waiting = missing.length > 3;
+  if (waiting) setStatus("Preparing the plate…", 0);
+  await pool(top, 6, async sp => { await ensureFigure(sp); if (waiting && !figures.get(sp.sci).button.isConnected) setStatus("Preparing the plate… " + (++done) + " of " + missing.length, done / missing.length); });
+  setStatus("");
+  renderIndex(); layout(); renderLatest();
+}
+
 function setPeriod(p) {
   period = p; if (!urlPeriod) store.set("period", p); lastSig = "";
   for (const [, f] of figures) { f.button.classList.remove("in"); }
+  // the birds of the period just left have been faded out, so say what is
+  // happening in the space they leave rather than showing an empty plate
+  setStatus("Asking the station…", 0);
   renderHeading(); refresh(true);
 }
 document.querySelectorAll("nav button").forEach(b => b.addEventListener("click", () => setPeriod(b.dataset.p)));
@@ -1483,7 +1559,7 @@ function cardDefaults(v) {
 function cardAddress() {
   const u = new URL(location.pathname, location.href);
   if (card.view) u.searchParams.set("view", card.view);
-  if (demo) u.searchParams.set("demo", demoPlate === 2 ? "2" : "");
+  if (forcedDemo) u.searchParams.set("demo", demoPlate === 2 ? "2" : "");   // a card is not made a sample by a station that happened to be down
   if (card.period) u.searchParams.set("period", card.period);
   if (card.limit) u.searchParams.set("limit", card.limit);
   const base = cardDefaults(card.view), fields = cardFields(card.view);
@@ -1563,7 +1639,8 @@ let rz; addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(lay
 applyOptions();
 renderHeading();
 Promise.all([loadFugleramme(), loadSource()]).then(() => refresh(true));
-setInterval(() => { if (!document.hidden && !demo) refresh(false); }, CONFIG.refreshSeconds * 1000);
+// a station that was down is asked again, and takes the plate back when it answers
+setInterval(() => { if (!document.hidden && !forcedDemo) refresh(false); }, CONFIG.refreshSeconds * 1000);
 </script>
 </body>
 </html>
