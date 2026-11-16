@@ -1,0 +1,4 @@
+# The cut-outs are fetched from Fugleramme when the image is built, and land
+# here when the page is served locally for testing. They do not belong in the
+# repository.
+html/art/

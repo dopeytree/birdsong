@@ -208,6 +208,9 @@ dd.big{color:var(--madder);font-size:1.3rem;line-height:1.2}
 #settings summary:hover{color:var(--madder)}
 #settings details>:nth-child(2){margin-top:.2rem}
 #settings .credits{margin:0;font-size:.85rem;line-height:1.45}
+/* the cardinal of the first sample plate, cut out by Fugleramme after Audubon,
+   tinted to the paper as the figures on the plate are */
+#supportBird{display:block;height:5.5rem;width:auto;margin:0 auto .5rem;filter:url(#paperTint)}
 #settings blockquote{margin:0 0 .6rem;font-style:italic;color:var(--sepia);font-size:.9rem;line-height:1.5;
   border-left:1px solid var(--rule);padding-left:.7rem}
 #settings blockquote cite{display:block;font-style:normal;font-size:.8rem;margin-top:.25rem}
@@ -371,6 +374,7 @@ dd.big{color:var(--madder);font-size:1.3rem;line-height:1.2}
 
     <details id="supportBox">
       <summary>Support</summary>
+      <img id="supportBird" src="art/artwork/classic/birds/cardinalis-cardinalis.webp" alt="" loading="lazy">
       <blockquote>Beautiful things, &ldquo;singing out brilliantly from the wreck of time&rdquo; &mdash; passed hand to hand to the next generation of lovers.
         <cite>after Donna Tartt, <i>The Goldfinch</i></cite></blockquote>
       <p class="credits">One hopes you are enjoying Birdsong. If something is amiss, or it does not yet do what you want of it, say so on <a href="https://github.com/dopeytree/birdsong/issues" target="_blank" rel="noopener">GitHub</a>.</p>
@@ -1548,6 +1552,8 @@ $("#setForm").addEventListener("submit", () => {
   if (st) store.set("station", st); else store.del("station");
   location.href = location.pathname;
 });
+// no cut-outs in the image, no bird here: better nothing than a broken frame
+$("#supportBird").addEventListener("error", e => e.target.remove());
 $("#showSample").addEventListener("click", () => { location.href = location.pathname + "?demo"; });
 $("#showSample2").addEventListener("click", () => { location.href = location.pathname + "?demo=2"; });
 document.querySelectorAll("[data-close]").forEach(b => b.addEventListener("click", () => b.closest("dialog").close()));
